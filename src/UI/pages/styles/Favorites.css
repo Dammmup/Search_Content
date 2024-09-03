@@ -1,0 +1,16 @@
+.chep{
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    margin-top: 3%;
+}
+.lol{
+    margin-top: 3%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.kek{
+    display: flex;
+    justify-content: space-around;
+}
