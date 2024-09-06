@@ -1,65 +1,96 @@
 /* profile.css */
 .profile-container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    background-color: #f9f9f9;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  .profile-title {
-    text-align: center;
-    color: #4A90E2; /* Синий цвет */
-    margin-bottom: 20px;
-  }
-  
-  .profile-search-count {
-    background-color: #f0f0f0;
-    text-align: center;
-    padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 30px;
-  }
-  
-  .profile-section {
-    margin-bottom: 20px;
-  }
-  
-  .profile-subtitle {
-    display: block;
-    margin-bottom: 5px;
-    font-size: 16px;
-  }
-  
-  
-  .logout-button {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000;
-  }
-  
- /* Серое изображение */
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.profile-title {
+  text-align: center;
+  color: #4A90E2; /* Синий цвет */
+  margin-bottom: 20px;
+}
+
+.profile-search-count {
+  background-color: #f0f0f0;
+  text-align: center;
+  padding: 10px;
+  border-radius: 10px;
+  margin-bottom: 30px;
+}
+
+.profile-section {
+  margin-bottom: 20px;
+}
+
+.profile-subtitle {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 16px;
+}
+
+
+.logout-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+/* Серое изображение */
 .goal-dinosaur {
-  width: 100px;          /* Ширина изображения динозавра */
-  height: auto;         /* Автоматическая высота для пропорционального масштаба */
-  margin-right: 10px;   /* Отступ справа от изображения */
-  vertical-align: middle; /* Выравнивание по центру */
-  filter: grayscale(100%); /* Применение серого фильтра */
+width: 100px;          /* Ширина изображения динозавра */
+height: auto;         /* Автоматическая высота для пропорционального масштаба */
+margin-right: 10px;   /* Отступ справа от изображения */
+vertical-align: middle; /* Выравнивание по центру */
+filter: grayscale(100%); /* Применение серого фильтра */
 }
 
 /* Цветное изображение */
 .achievement-dinosaur {
-  width: 100px;          /* Ширина изображения динозавра */
-  height: auto;         /* Автоматическая высота для пропорционального масштаба */
-  margin-right: 10px;   /* Отступ справа от изображения */
-  vertical-align: middle; /* Выравнивание по центру */
-  filter: none;         /* Убираем фильтр */
+width: 100px;          /* Ширина изображения динозавра */
+height: auto;         /* Автоматическая высота для пропорционального масштаба */
+margin-right: 10px;   /* Отступ справа от изображения */
+vertical-align: middle; /* Выравнивание по центру */
+filter: none;         /* Убираем фильтр */
 }
-  
-  .profile-section .ant-list-item {
-    display: flex;
-    align-items: center;
-    padding: 8px 16px; /* Отступы для элементов списка */
+
+.profile-section .ant-list-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px; /* Отступы для элементов списка */
+}
+@media (max-width: 768px) {
+  .profile-container {
+    padding: 10px;
   }
+
+  .profile-title {
+    font-size: 24px;
+  }
+
+  .profile-subtitle {
+    font-size: 18px;
+  }
+
+  .goal-dinosaur {
+    width: 50px; /* уменьшение размера картинки для мобильных устройств */
+  }
+
+  .logout-button {
+    width: 100%; /* кнопка будет занимать всю ширину экрана */
+  }
+}
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+}
+img {
+  max-width: 100%;
+  height: auto;
+}
+    

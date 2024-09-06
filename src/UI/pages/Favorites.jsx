@@ -12,8 +12,7 @@ import { likeImage } from '../../BL/slices/imageSlice';
 import { likeCharacter } from '../../BL/slices/rickAndMortySlice';
 import { likeFact } from '../../BL/slices/numbersFactSlice';
 import { likeTrack } from '../../BL/slices/musicSlice';
-import Cube from '../components/Cube';
-import { colors1,colors2,colors3,randomCubes,getActiveColors,getHoverColors,randomPosition } from './fitch';
+import { colors1,colors2,colors3,getActiveColors,getHoverColors } from './fitch';
 import { BotomFooter } from '../components/BotomFooter';
 
 
@@ -273,11 +272,7 @@ export const Favorites = () => {
         {activeType === 'facts' && renderCards(facts, 'fact')}
       </div>
 
-      <div style={{display:"flex",flexDirection:'row'}}>
-      {[...Array(randomCubes())].map((_, index) => (
-            <Cube key={index} style={{ ...randomPosition(), width: '100px', height: '100px' }} />
-          ))}
-        </div>
+
 <BotomFooter/>
     </>
   );

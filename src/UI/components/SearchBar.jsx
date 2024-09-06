@@ -1,4 +1,4 @@
-import { Space, Button, ConfigProvider, Popover } from 'antd';
+import { Space, Button, ConfigProvider } from 'antd';
 import { HeartOutlined, UserOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import './styles/searchbar.css';
@@ -8,17 +8,7 @@ import { colors1,colors2,colors3,getActiveColors,getHoverColors } from '../pages
 
 
 const Buttons = () => {
-  const content = (
-    <div style={{width:150}}>
-      <p>Click this button to navigate 
-        to page with liked items</p>
-    </div>
-  );
-  const content1 = (
-    <div style={{width:150}}>
-      <p>Click this button to enter profile data</p>
-    </div>
-  );
+
   const navigate = useNavigate();
   const films = useSelector((state) => state.films.films || []);
   const images = useSelector((state) => state.images.images || []);
@@ -32,23 +22,21 @@ const Buttons = () => {
     navigate(likedItems.length === 0 ? '/empty' : '/favorites');
   };
 
-  const handleProfileClick = () => {
-  
+  const handleProfileClick = () => { 
       navigate('/profile');
-    
   };
 
 
   return (
     <div className='posiciya'>
-      <div className="elme">
+      <div className="logo">
         <Link to="/">
           <Button type="primary" size="large" icon={<img src={logo} alt="" style={{ width: 150,marginTop:90 }} />}>
           </Button>
         </Link>
       </div>
 
-      <Space>
+   <div className='buttons'>
         <Space>
           <ConfigProvider
             theme={{
@@ -145,13 +133,11 @@ const Buttons = () => {
             </Link>
           </ConfigProvider>
         </Space>
-      </Space>
-      <Popover content={content} title="Favorites cards">
+    </div>
+
       <Button type="primary" shape="round" icon={<HeartOutlined />} onClick={handleFavoritesClick} />
-      </Popover>
-      <Popover content={content1} title="Profile">
       <Button type="primary" shape="round" icon={<UserOutlined />} onClick={handleProfileClick} />
-      </Popover>
+
 </div>
   );
 };

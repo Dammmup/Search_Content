@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Input, Alert } from 'antd';
-import { getAccounts, addUser, getCurrentUser, logout, accounts } from '../../BL/userdb';
+import {  addUser, accounts } from '../../BL/userdb';
 
 const AuthModal = ({ visible, onLogin, onCancel }) => {
   const [form] = Form.useForm();
@@ -57,8 +57,9 @@ const AuthModal = ({ visible, onLogin, onCancel }) => {
   return (
     <Modal
       title={isLogin ? 'Вход' : 'Регистрация'}
-      visible={visible}
+      open={visible}
       footer={null}
+      maskClosable={false} 
       onCancel={onCancel}
       onOk={handleSubmit}
       afterClose={onOpen}

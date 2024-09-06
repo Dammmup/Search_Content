@@ -1,0 +1,33 @@
+/* Основные стили */
+.main-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 100vh;
+  flex-wrap: wrap;
+}
+
+
+
+.profile-container {
+  text-align: center;
+  margin-top: -45vh;
+}
+
+.text {
+  font-size: 2em;
+}
+
+/* Медиазапросы */
+@media (max-width: 768px) {
+  .profile-container {
+    margin-top: 0;
+    padding: 0 10px;
+  }
+
+  .text {
+    font-size: 1.5em;
+  }
+
+
+}
