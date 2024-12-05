@@ -29,10 +29,17 @@ const Buttons = () => {
 
   return (
     <div className='posiciya'>
-      <div className="logo">
+      <div className="logo" >
         <Link to="/">
-          <Button type="primary" size="large" icon={<img src={logo} alt="" style={{ width: 150,marginTop:90 }} />}>
-          </Button>
+        <Button
+  type="primary"
+  size="large"
+  onClick={() => navigate('/')}
+  style={{ background: 'none', border: 'none', padding: 0 }}
+>
+  <img src={logo} alt="Logo" style={{ width: 150, marginTop: 90 }} />
+</Button>
+
         </Link>
       </div>
 
