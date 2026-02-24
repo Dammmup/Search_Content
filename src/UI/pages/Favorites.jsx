@@ -19,7 +19,7 @@ import { toggleGameLike } from '../../BL/slices/gameSlice';
 import { colors1, colors2, colors3, getActiveColors, getHoverColors } from './fitch';
 import { BotomFooter } from '../components/BotomFooter';
 import AuthModal from '../components/AuthModal';
-import { authAPI } from '../../BL/api';
+import { authAPI, favoritesAPI } from '../../BL/api';
 
 export const Favorites = () => {
   const dispatch = useDispatch();
@@ -64,6 +64,18 @@ export const Favorites = () => {
   const [localFavCoins, setLocalFavCoins] = useState([]);
   const [localFavGames, setLocalFavGames] = useState([]);
 
+  // Загрузка из базы данных
+  const [dbFavorites, setDbFavorites] = useState({
+    film: [],
+    track: [],
+    image: [],
+    character: [],
+    fact: [],
+    joke: [],
+    crypto: [],
+    game: []
+  });
+
   useEffect(() => {
     const load = (key) => {
       const saved = localStorage.getItem(key);
@@ -77,26 +89,55 @@ export const Favorites = () => {
     setLocalFavJokes(load('favorite_jokes'));
     setLocalFavCoins(load('favorite_crypto'));
     setLocalFavGames(load('favorite_games'));
+
+    // Подгрузка из БД
+    const loadDbFavorites = async () => {
+      try {
+        const user = await authAPI.getUser();
+        if (user) {
+          const allFavs = await favoritesAPI.getAll(user.id);
+          const mappedFavs = allFavs.reduce((acc, curr) => {
+            const type = curr.type;
+            if (acc[type]) {
+              acc[type].push(curr.data);
+            } else {
+              acc[type] = [curr.data];
+            }
+            return acc;
+          }, {
+            film: [], track: [], image: [], character: [], fact: [], joke: [], crypto: [], game: []
+          });
+          setDbFavorites(mappedFavs);
+        }
+      } catch (err) {
+        console.error('Ошибка при загрузке избранного из БД', err);
+      }
+    };
+
+    checkAuth().then(isAuth => {
+      if (isAuth) loadDbFavorites();
+    });
   }, []);
 
-  // Комбинируем: localStorage + Redux
-  const combine = (localItems, searchItems) => {
+  // Комбинируем: localStorage + Redux + DB
+  const combine = (localItems, searchItems, dbItems = []) => {
     const map = new Map();
     localItems.forEach(item => map.set(item.id || item.external_id, { ...item, is_favorite: true }));
+    dbItems.forEach(item => map.set(item.id || item.external_id, { ...item, is_favorite: true }));
     searchItems.forEach(item => {
       if (!map.has(item.id)) map.set(item.id, item);
     });
     return Array.from(map.values());
   };
 
-  const films = React.useMemo(() => combine(localFavFilms, searchFilms), [localFavFilms, searchFilms]);
-  const images = React.useMemo(() => combine(localFavImages, searchImages), [localFavImages, searchImages]);
-  const tracks = React.useMemo(() => combine(localFavTracks, searchTracks), [localFavTracks, searchTracks]);
-  const characters = React.useMemo(() => combine(localFavCharacters, searchCharacters), [localFavCharacters, searchCharacters]);
-  const facts = React.useMemo(() => combine(localFavFacts, searchFacts), [localFavFacts, searchFacts]);
-  const jokes = React.useMemo(() => combine(localFavJokes, searchJokes), [localFavJokes, searchJokes]);
-  const coins = React.useMemo(() => combine(localFavCoins, searchCoins), [localFavCoins, searchCoins]);
-  const games = React.useMemo(() => combine(localFavGames, searchGames), [localFavGames, searchGames]);
+  const films = React.useMemo(() => combine(localFavFilms, searchFilms, dbFavorites.film), [localFavFilms, searchFilms, dbFavorites.film]);
+  const images = React.useMemo(() => combine(localFavImages, searchImages, dbFavorites.image), [localFavImages, searchImages, dbFavorites.image]);
+  const tracks = React.useMemo(() => combine(localFavTracks, searchTracks, dbFavorites.track), [localFavTracks, searchTracks, dbFavorites.track]);
+  const characters = React.useMemo(() => combine(localFavCharacters, searchCharacters, dbFavorites.character), [localFavCharacters, searchCharacters, dbFavorites.character]);
+  const facts = React.useMemo(() => combine(localFavFacts, searchFacts, dbFavorites.fact), [localFavFacts, searchFacts, dbFavorites.fact]);
+  const jokes = React.useMemo(() => combine(localFavJokes, searchJokes, dbFavorites.joke), [localFavJokes, searchJokes, dbFavorites.joke]);
+  const coins = React.useMemo(() => combine(localFavCoins, searchCoins, dbFavorites.crypto), [localFavCoins, searchCoins, dbFavorites.crypto]);
+  const games = React.useMemo(() => combine(localFavGames, searchGames, dbFavorites.game), [localFavGames, searchGames, dbFavorites.game]);
 
   const handleRemoveLike = async (type, item) => {
     const isAuthenticated = await checkAuth();
@@ -139,6 +180,12 @@ export const Favorites = () => {
     }
 
     doAction();
+
+    // Оптимистичное удаление из UI
+    setDbFavorites(prev => ({
+      ...prev,
+      [type]: prev[type].filter(fav => (fav.id || fav.external_id) !== (item.id || item.external_id))
+    }));
   };
 
   // Обработчик успешной авторизации
