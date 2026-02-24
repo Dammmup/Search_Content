@@ -24,15 +24,14 @@ export const fetchCharacterById = createAsyncThunk(
 
 export const loadRickAndMortyFavoritesFromDB = createAsyncThunk(
   'rickAndMorty/loadFavoritesFromDB',
-  async () => {
+  async (_, { rejectWithValue }) => {
     try {
       const user = await authAPI.getUser();
       if (!user) return [];
       const response = await favoritesAPI.getAll(user.id, 'rickandmorty');
       return response;
     } catch (error) {
-      const saved = localStorage.getItem('favorite_rickandmorty');
-      return saved ? JSON.parse(saved) : [];
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -57,13 +56,7 @@ export const toggleRickAndMortyLike = createAsyncThunk(
       }
       return character.id;
     } catch (error) {
-      const saved = localStorage.getItem('favorite_rickandmorty');
-      let favorites = saved ? JSON.parse(saved) : [];
-      const index = favorites.findIndex(c => c.id === character.id);
-      if (index >= 0) favorites.splice(index, 1);
-      else favorites.push(character);
-      localStorage.setItem('favorite_rickandmorty', JSON.stringify(favorites));
-      return character.id;
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -72,7 +65,6 @@ const rickAndMortySlice = createSlice({
   name: 'rickAndMorty',
   initialState: {
     characters: [],
-    favorites: [],
     status: 'idle',
     error: null,
   },
@@ -95,10 +87,7 @@ const rickAndMortySlice = createSlice({
       })
       .addCase(fetchCharacters.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.characters = action.payload.map(character => ({
-          ...character,
-          is_favorite: state.favorites.some(f => f.external_id === String(character.id))
-        }));
+        state.characters = action.payload;
       })
       .addCase(fetchCharacters.rejected, (state, action) => {
         state.status = 'failed';
@@ -109,10 +98,7 @@ const rickAndMortySlice = createSlice({
       })
       .addCase(fetchCharacterById.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        const character = {
-          ...action.payload,
-          is_favorite: state.favorites.some(f => f.external_id === String(action.payload.id))
-        };
+        const character = action.payload;
         const exists = state.characters.find(c => c.id === character.id);
         if (!exists) {
           state.characters.push(character);
@@ -121,9 +107,6 @@ const rickAndMortySlice = createSlice({
       .addCase(fetchCharacterById.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.error.message;
-      })
-      .addCase(loadRickAndMortyFavoritesFromDB.fulfilled, (state, action) => {
-        state.favorites = action.payload;
       })
       .addCase(toggleRickAndMortyLike.fulfilled, (state, action) => {
         const characterId = action.payload;

@@ -30,15 +30,14 @@ export const fetchCryptoDetails = createAsyncThunk(
 
 export const loadCryptoFavoritesFromDB = createAsyncThunk(
     'crypto/loadFavoritesFromDB',
-    async () => {
+    async (_, { rejectWithValue }) => {
         try {
             const user = await authAPI.getUser();
             if (!user) return [];
             const response = await favoritesAPI.getAll(user.id, 'crypto');
             return response;
         } catch (error) {
-            const saved = localStorage.getItem('favorite_crypto');
-            return saved ? JSON.parse(saved) : [];
+            return rejectWithValue(error.message);
         }
     }
 );
@@ -63,13 +62,7 @@ export const toggleCryptoLike = createAsyncThunk(
             }
             return coin.id;
         } catch (error) {
-            const saved = localStorage.getItem('favorite_crypto');
-            let favorites = saved ? JSON.parse(saved) : [];
-            const index = favorites.findIndex(c => c.id === coin.id);
-            if (index >= 0) favorites.splice(index, 1);
-            else favorites.push(coin);
-            localStorage.setItem('favorite_crypto', JSON.stringify(favorites));
-            return coin.id;
+            return rejectWithValue(error.message);
         }
     }
 );
@@ -78,7 +71,6 @@ const cryptoSlice = createSlice({
     name: 'crypto',
     initialState: {
         coins: [],
-        favorites: [],
         status: 'idle',
         error: null,
     },
@@ -101,17 +93,11 @@ const cryptoSlice = createSlice({
             })
             .addCase(fetchCrypto.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                state.coins = action.payload.map(coin => ({
-                    ...coin,
-                    is_favorite: state.favorites.some(f => f.external_id === coin.id)
-                }));
+                state.coins = action.payload;
             })
             .addCase(fetchCrypto.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.error.message;
-            })
-            .addCase(loadCryptoFavoritesFromDB.fulfilled, (state, action) => {
-                state.favorites = action.payload;
             })
             .addCase(toggleCryptoLike.fulfilled, (state, action) => {
                 const coinId = action.payload;

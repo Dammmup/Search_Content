@@ -63,15 +63,14 @@ export const fetchDateFact = createAsyncThunk(
 
 export const loadNumbersFactFavoritesFromDB = createAsyncThunk(
   'numbersFact/loadFavoritesFromDB',
-  async () => {
+  async (_, { rejectWithValue }) => {
     try {
       const user = await authAPI.getUser();
       if (!user) return [];
       const response = await favoritesAPI.getAll(user.id, 'numbersfact');
       return response;
     } catch (error) {
-      const saved = localStorage.getItem('favorite_numbersfacts');
-      return saved ? JSON.parse(saved) : [];
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -96,13 +95,7 @@ export const toggleNumbersFactLike = createAsyncThunk(
       }
       return fact.id;
     } catch (error) {
-      const saved = localStorage.getItem('favorite_numbersfacts');
-      let favorites = saved ? JSON.parse(saved) : [];
-      const index = favorites.findIndex(f => f.id === fact.id);
-      if (index >= 0) favorites.splice(index, 1);
-      else favorites.push(fact);
-      localStorage.setItem('favorite_numbersfacts', JSON.stringify(favorites));
-      return fact.id;
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -112,7 +105,6 @@ const numbersFactSlice = createSlice({
   name: 'numbersFact',
   initialState: {
     facts: [],
-    favorites: [],
     status: 'idle',
     error: null,
   },
@@ -137,8 +129,7 @@ const numbersFactSlice = createSlice({
         state.status = 'succeeded';
         const fact = {
           ...action.payload,
-          id: `math-${action.payload.number}`,
-          is_favorite: state.favorites.some(f => f.external_id === `math-${action.payload.number}`)
+          id: `math-${action.payload.number}`
         };
         state.facts = [fact];
       })
@@ -153,8 +144,7 @@ const numbersFactSlice = createSlice({
         state.status = 'succeeded';
         const fact = {
           ...action.payload,
-          id: `year-${action.payload.number}`,
-          is_favorite: state.favorites.some(f => f.external_id === `year-${action.payload.number}`)
+          id: `year-${action.payload.number}`
         };
         state.facts = [fact];
       })
@@ -169,17 +159,13 @@ const numbersFactSlice = createSlice({
         state.status = 'succeeded';
         const fact = {
           ...action.payload,
-          id: `date-${action.payload.number}`,
-          is_favorite: state.favorites.some(f => f.external_id === `date-${action.payload.number}`)
+          id: `date-${action.payload.number}`
         };
         state.facts = [fact];
       })
       .addCase(fetchDateFact.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.error.message;
-      })
-      .addCase(loadNumbersFactFavoritesFromDB.fulfilled, (state, action) => {
-        state.favorites = action.payload;
       })
       .addCase(toggleNumbersFactLike.fulfilled, (state, action) => {
         const factId = action.payload;

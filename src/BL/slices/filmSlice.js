@@ -20,16 +20,14 @@ export const fetchFilms = createAsyncThunk(
 // Загрузить избранное из Supabase
 export const loadFavoritesFromDB = createAsyncThunk(
   'films/loadFavoritesFromDB',
-  async () => {
+  async (_, { rejectWithValue }) => {
     try {
       const user = await authAPI.getUser();
       if (!user) return [];
       const response = await favoritesAPI.getAll(user.id, 'film');
       return response;
     } catch (error) {
-      // Fallback: localStorage
-      const saved = localStorage.getItem('favorite_films');
-      return saved ? JSON.parse(saved) : [];
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -56,19 +54,7 @@ export const toggleFilmLike = createAsyncThunk(
 
       return film.id;
     } catch (error) {
-      // Fallback: localStorage
-      const saved = localStorage.getItem('favorite_films');
-      let favorites = saved ? JSON.parse(saved) : [];
-
-      const index = favorites.findIndex(f => f.id === film.id);
-      if (index >= 0) {
-        favorites.splice(index, 1);
-      } else {
-        favorites.push(film);
-      }
-      localStorage.setItem('favorite_films', JSON.stringify(favorites));
-
-      return film.id;
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -77,7 +63,6 @@ const filmSlice = createSlice({
   name: 'films',
   initialState: {
     films: [],
-    favorites: [],
     status: 'idle',
     error: null,
   },
@@ -96,10 +81,7 @@ const filmSlice = createSlice({
       })
       .addCase(fetchFilms.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.films = action.payload.map(film => ({
-          ...film,
-          is_favorite: state.favorites.some(f => f.external_id === String(film.id))
-        }));
+        state.films = action.payload;
       })
       .addCase(fetchFilms.rejected, (state, action) => {
         state.status = 'failed';

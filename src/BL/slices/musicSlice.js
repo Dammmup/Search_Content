@@ -45,18 +45,14 @@ export const fetchMusic = createAsyncThunk(
 
 export const loadMusicFavoritesFromDB = createAsyncThunk(
   'music/loadFavoritesFromDB',
-  async () => {
+  async (_, { rejectWithValue }) => {
     try {
       const user = await authAPI.getUser();
-      if (!user) {
-        const saved = localStorage.getItem('favorite_tracks');
-        return saved ? JSON.parse(saved) : [];
-      }
+      if (!user) return [];
       const response = await favoritesAPI.getAll(user.id, 'track');
       return response;
     } catch (error) {
-      const saved = localStorage.getItem('favorite_tracks');
-      return saved ? JSON.parse(saved) : [];
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -81,17 +77,7 @@ export const toggleTrackLike = createAsyncThunk(
         if (result.error && result.error !== 'Уже в избранном') throw new Error(result.error);
       }
     } catch (error) {
-      // Fallback: сохраняем в localStorage
-      console.warn('Supabase недоступен, сохраняю в localStorage:', error.message);
-      const saved = localStorage.getItem('favorite_tracks');
-      let favorites = saved ? JSON.parse(saved) : [];
-      const index = favorites.findIndex(t => t.id === track.id);
-      if (index >= 0) {
-        favorites.splice(index, 1);
-      } else {
-        favorites.push({ ...track, is_favorite: true });
-      }
-      localStorage.setItem('favorite_tracks', JSON.stringify(favorites));
+      return rejectWithValue(error.message);
     }
 
     return track.id;
@@ -102,7 +88,6 @@ const musicSlice = createSlice({
   name: 'music',
   initialState: {
     tracks: [],
-    favorites: [],
     status: 'idle',
     error: null,
   },
@@ -121,17 +106,11 @@ const musicSlice = createSlice({
       })
       .addCase(fetchMusic.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.tracks = action.payload.map(m => ({
-          ...m,
-          is_favorite: state.favorites.some(f => f.external_id === String(m.id))
-        }));
+        state.tracks = action.payload;
       })
       .addCase(fetchMusic.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
-      })
-      .addCase(loadMusicFavoritesFromDB.fulfilled, (state, action) => {
-        state.favorites = action.payload;
       })
       .addCase(toggleTrackLike.fulfilled, (state, action) => {
         const trackId = action.payload;

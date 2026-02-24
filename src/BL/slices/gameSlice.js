@@ -16,15 +16,14 @@ export const fetchGames = createAsyncThunk(
 
 export const loadGameFavoritesFromDB = createAsyncThunk(
     'games/loadFavoritesFromDB',
-    async () => {
+    async (_, { rejectWithValue }) => {
         try {
             const user = await authAPI.getUser();
             if (!user) return [];
             const response = await favoritesAPI.getAll(user.id, 'game');
             return response;
         } catch (error) {
-            const saved = localStorage.getItem('favorite_games');
-            return saved ? JSON.parse(saved) : [];
+            return rejectWithValue(error.message);
         }
     }
 );
@@ -49,13 +48,7 @@ export const toggleGameLike = createAsyncThunk(
             }
             return game.id;
         } catch (error) {
-            const saved = localStorage.getItem('favorite_games');
-            let favorites = saved ? JSON.parse(saved) : [];
-            const index = favorites.findIndex(g => g.id === game.id);
-            if (index >= 0) favorites.splice(index, 1);
-            else favorites.push(game);
-            localStorage.setItem('favorite_games', JSON.stringify(favorites));
-            return game.id;
+            return rejectWithValue(error.message);
         }
     }
 );
@@ -64,7 +57,6 @@ const gameSlice = createSlice({
     name: 'games',
     initialState: {
         games: [],
-        favorites: [],
         status: 'idle',
         error: null,
     },
@@ -87,17 +79,11 @@ const gameSlice = createSlice({
             })
             .addCase(fetchGames.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                state.games = action.payload.map(game => ({
-                    ...game,
-                    is_favorite: state.favorites.some(f => f.external_id === String(game.id))
-                }));
+                state.games = action.payload;
             })
             .addCase(fetchGames.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.error.message;
-            })
-            .addCase(loadGameFavoritesFromDB.fulfilled, (state, action) => {
-                state.favorites = action.payload;
             })
             .addCase(toggleGameLike.fulfilled, (state, action) => {
                 const gameId = action.payload;

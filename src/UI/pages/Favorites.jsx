@@ -43,26 +43,7 @@ export const Favorites = () => {
     }
   };
 
-  // Данные из Redux
-  const searchFilms = useSelector((state) => state.films.films || []);
-  const searchImages = useSelector((state) => state.images.images || []);
-  const searchTracks = useSelector((state) => state.music.tracks || []);
-  const searchCharacters = useSelector((state) => state.rickAndMorty.characters || []);
-  const searchFacts = useSelector((state) => state.numbersFact.facts || []);
-  const searchJokes = useSelector((state) => state.jokes?.jokes || []);
-  const searchCoins = useSelector((state) => state.crypto?.coins || []);
-  const searchGames = useSelector((state) => state.games?.games || []);
   const navigate = useNavigate();
-
-  // Загрузка из localStorage для всех типов
-  const [localFavFilms, setLocalFavFilms] = useState([]);
-  const [localFavImages, setLocalFavImages] = useState([]);
-  const [localFavTracks, setLocalFavTracks] = useState([]);
-  const [localFavCharacters, setLocalFavCharacters] = useState([]);
-  const [localFavFacts, setLocalFavFacts] = useState([]);
-  const [localFavJokes, setLocalFavJokes] = useState([]);
-  const [localFavCoins, setLocalFavCoins] = useState([]);
-  const [localFavGames, setLocalFavGames] = useState([]);
 
   // Загрузка из базы данных
   const [dbFavorites, setDbFavorites] = useState({
@@ -119,25 +100,19 @@ export const Favorites = () => {
     });
   }, []);
 
-  // Комбинируем: localStorage + Redux + DB
-  const combine = (localItems, searchItems, dbItems = []) => {
-    const map = new Map();
-    localItems.forEach(item => map.set(item.id || item.external_id, { ...item, is_favorite: true }));
-    dbItems.forEach(item => map.set(item.id || item.external_id, { ...item, is_favorite: true }));
-    searchItems.forEach(item => {
-      if (!map.has(item.id)) map.set(item.id, item);
-    });
-    return Array.from(map.values());
+  // Приводим данные к нужному формату для рендера
+  const prepareForRender = (dbItems = []) => {
+    return dbItems.map(item => ({ ...item, is_favorite: true }));
   };
 
-  const films = React.useMemo(() => combine(localFavFilms, searchFilms, dbFavorites.film), [localFavFilms, searchFilms, dbFavorites.film]);
-  const images = React.useMemo(() => combine(localFavImages, searchImages, dbFavorites.image), [localFavImages, searchImages, dbFavorites.image]);
-  const tracks = React.useMemo(() => combine(localFavTracks, searchTracks, dbFavorites.track), [localFavTracks, searchTracks, dbFavorites.track]);
-  const characters = React.useMemo(() => combine(localFavCharacters, searchCharacters, dbFavorites.character), [localFavCharacters, searchCharacters, dbFavorites.character]);
-  const facts = React.useMemo(() => combine(localFavFacts, searchFacts, dbFavorites.fact), [localFavFacts, searchFacts, dbFavorites.fact]);
-  const jokes = React.useMemo(() => combine(localFavJokes, searchJokes, dbFavorites.joke), [localFavJokes, searchJokes, dbFavorites.joke]);
-  const coins = React.useMemo(() => combine(localFavCoins, searchCoins, dbFavorites.crypto), [localFavCoins, searchCoins, dbFavorites.crypto]);
-  const games = React.useMemo(() => combine(localFavGames, searchGames, dbFavorites.game), [localFavGames, searchGames, dbFavorites.game]);
+  const films = React.useMemo(() => prepareForRender(dbFavorites.film), [dbFavorites.film]);
+  const images = React.useMemo(() => prepareForRender(dbFavorites.image), [dbFavorites.image]);
+  const tracks = React.useMemo(() => prepareForRender(dbFavorites.track), [dbFavorites.track]);
+  const characters = React.useMemo(() => prepareForRender(dbFavorites.character), [dbFavorites.character]);
+  const facts = React.useMemo(() => prepareForRender(dbFavorites.fact), [dbFavorites.fact]);
+  const jokes = React.useMemo(() => prepareForRender(dbFavorites.joke), [dbFavorites.joke]);
+  const coins = React.useMemo(() => prepareForRender(dbFavorites.crypto), [dbFavorites.crypto]);
+  const games = React.useMemo(() => prepareForRender(dbFavorites.game), [dbFavorites.game]);
 
   const handleRemoveLike = async (type, item) => {
     const isAuthenticated = await checkAuth();

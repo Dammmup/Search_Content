@@ -61,15 +61,14 @@ export const fetchRandomJokes = createAsyncThunk(
 
 export const loadJokeFavoritesFromDB = createAsyncThunk(
     'jokes/loadFavoritesFromDB',
-    async () => {
+    async (_, { rejectWithValue }) => {
         try {
             const user = await authAPI.getUser();
             if (!user) return [];
             const response = await favoritesAPI.getAll(user.id, 'joke');
             return response;
         } catch (error) {
-            const saved = localStorage.getItem('favorite_jokes');
-            return saved ? JSON.parse(saved) : [];
+            return rejectWithValue(error.message);
         }
     }
 );
@@ -94,13 +93,7 @@ export const toggleJokeLike = createAsyncThunk(
             }
             return joke.id;
         } catch (error) {
-            const saved = localStorage.getItem('favorite_jokes');
-            let favorites = saved ? JSON.parse(saved) : [];
-            const index = favorites.findIndex(j => j.id === joke.id);
-            if (index >= 0) favorites.splice(index, 1);
-            else favorites.push(joke);
-            localStorage.setItem('favorite_jokes', JSON.stringify(favorites));
-            return joke.id;
+            return rejectWithValue(error.message);
         }
     }
 );
@@ -109,7 +102,6 @@ const jokeSlice = createSlice({
     name: 'jokes',
     initialState: {
         jokes: [],
-        favorites: [],
         status: 'idle',
         error: null,
     },
@@ -132,10 +124,7 @@ const jokeSlice = createSlice({
             })
             .addCase(fetchJokes.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                state.jokes = action.payload.map(joke => ({
-                    ...joke,
-                    is_favorite: state.favorites.some(f => f.external_id === joke.id)
-                }));
+                state.jokes = action.payload;
             })
             .addCase(fetchJokes.rejected, (state, action) => {
                 state.status = 'failed';
@@ -146,17 +135,11 @@ const jokeSlice = createSlice({
             })
             .addCase(fetchRandomJokes.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                state.jokes = action.payload.map(joke => ({
-                    ...joke,
-                    is_favorite: state.favorites.some(f => f.external_id === joke.id)
-                }));
+                state.jokes = action.payload;
             })
             .addCase(fetchRandomJokes.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.error.message;
-            })
-            .addCase(loadJokeFavoritesFromDB.fulfilled, (state, action) => {
-                state.favorites = action.payload;
             })
             .addCase(toggleJokeLike.fulfilled, (state, action) => {
                 const jokeId = action.payload;

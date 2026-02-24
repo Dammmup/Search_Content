@@ -23,15 +23,14 @@ export const fetchImages = createAsyncThunk(
 
 export const loadImageFavoritesFromDB = createAsyncThunk(
   'images/loadFavoritesFromDB',
-  async () => {
+  async (_, { rejectWithValue }) => {
     try {
       const user = await authAPI.getUser();
       if (!user) return [];
       const response = await favoritesAPI.getAll(user.id, 'image');
       return response;
     } catch (error) {
-      const saved = localStorage.getItem('favorite_images');
-      return saved ? JSON.parse(saved) : [];
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -56,13 +55,7 @@ export const toggleImageLike = createAsyncThunk(
       }
       return image.id;
     } catch (error) {
-      const saved = localStorage.getItem('favorite_images');
-      let favorites = saved ? JSON.parse(saved) : [];
-      const index = favorites.findIndex(i => i.id === image.id);
-      if (index >= 0) favorites.splice(index, 1);
-      else favorites.push(image);
-      localStorage.setItem('favorite_images', JSON.stringify(favorites));
-      return image.id;
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -71,7 +64,6 @@ const imageSlice = createSlice({
   name: 'images',
   initialState: {
     images: [],
-    favorites: [],
     status: 'idle',
     error: null,
   },
@@ -91,10 +83,7 @@ const imageSlice = createSlice({
       })
       .addCase(fetchImages.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.images = action.payload.map(image => ({
-          ...image,
-          is_favorite: state.favorites.some(f => f.external_id === image.id)
-        }));
+        state.images = action.payload;
       })
       .addCase(fetchImages.rejected, (state, action) => {
         state.status = 'failed';
