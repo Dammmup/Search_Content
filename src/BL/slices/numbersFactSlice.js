@@ -1,100 +1,201 @@
-// src/BL/slices/numbersFactSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { favoritesAPI, authAPI } from '../api';
 
-export const fetchMathFact = createAsyncThunk(
-  'numbersFact/fetchMathFact',
-  async (number, { rejectWithValue }) => {
-    try {
-      const response = await axios.get(`http://numbersapi.com/${number}/math`);
-      return { text: response.data, id: `math-${number}` };
-    } catch (error) {
-      return rejectWithValue(error.response?.data || 'Ошибка получения математического факта');
-    }
+// Async thunks
+export const fetchNumbersFact = createAsyncThunk(
+  'numbersFact/fetchNumbersFact',
+  async (number = 'random') => {
+    const isRandom = number === 'random';
+    const url = isRandom
+      ? 'http://numbersapi.com/random/math?json'
+      : `http://numbersapi.com/${number}/math?json`;
+
+    const response = await axios.get(url);
+    return {
+      text: response.data.text,
+      number: response.data.number,
+      found: response.data.found,
+      type: 'math',
+    };
   }
 );
 
-export const fetchTriviaFact = createAsyncThunk(
-  'numbersFact/fetchTriviaFact',
-  async (number, { rejectWithValue }) => {
-    try {
-      const response = await axios.get(`http://numbersapi.com/${number}/trivia`);
-      return { text: response.data, id: `trivia-${number}` };
-    } catch (error) {
-      return rejectWithValue(error.response?.data || 'Ошибка получения тривиального факта');
-    }
+export const fetchYearFact = createAsyncThunk(
+  'numbersFact/fetchYearFact',
+  async (year = 'random') => {
+    const isRandom = year === 'random';
+    const url = isRandom
+      ? 'http://numbersapi.com/random/year?json'
+      : `http://numbersapi.com/${year}/year?json`;
+
+    const response = await axios.get(url);
+    return {
+      text: response.data.text,
+      number: response.data.number,
+      found: response.data.found,
+      type: 'year',
+    };
   }
 );
 
 export const fetchDateFact = createAsyncThunk(
   'numbersFact/fetchDateFact',
-  async (date, { rejectWithValue }) => {
+  async ({ month, day } = {}) => {
+    if (!month || !day) {
+      const response = await axios.get('http://numbersapi.com/random/date?json');
+      return {
+        text: response.data.text,
+        number: response.data.number,
+        found: response.data.found,
+        type: 'date',
+      };
+    }
+    const response = await axios.get(`http://numbersapi.com/${month}/${day}/date?json`);
+    return {
+      text: response.data.text,
+      number: response.data.number,
+      found: response.data.found,
+      type: 'date',
+    };
+  }
+);
+
+export const loadNumbersFactFavoritesFromDB = createAsyncThunk(
+  'numbersFact/loadFavoritesFromDB',
+  async () => {
     try {
-      const response = await axios.get(`http://numbersapi.com/${date}/date`);
-      return { text: response.data, id: `date-${date}` };
+      const user = await authAPI.getUser();
+      if (!user) return [];
+      const response = await favoritesAPI.getAll(user.id, 'numbersfact');
+      return response;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Ошибка получения факта по дате');
+      const saved = localStorage.getItem('favorite_numbersfacts');
+      return saved ? JSON.parse(saved) : [];
     }
   }
 );
 
+export const toggleNumbersFactLike = createAsyncThunk(
+  'numbersFact/toggleNumbersFactLike',
+  async ({ fact }, { getState }) => {
+    try {
+      const user = await authAPI.getUser();
+      if (!user) throw new Error('Не авторизован');
+
+      const { numbersFact } = getState();
+      const currentFact = numbersFact.facts.find(f => f.id === fact.id);
+      const isFavorite = currentFact?.is_favorite;
+
+      if (isFavorite) {
+        const result = await favoritesAPI.remove(user.id, 'numbersfact', fact.id);
+        if (result.error) throw new Error(result.error);
+      } else {
+        const result = await favoritesAPI.add(user.id, 'numbersfact', fact.id, fact);
+        if (result.error && result.error !== 'Уже в избранном') throw new Error(result.error);
+      }
+      return fact.id;
+    } catch (error) {
+      const saved = localStorage.getItem('favorite_numbersfacts');
+      let favorites = saved ? JSON.parse(saved) : [];
+      const index = favorites.findIndex(f => f.id === fact.id);
+      if (index >= 0) favorites.splice(index, 1);
+      else favorites.push(fact);
+      localStorage.setItem('favorite_numbersfacts', JSON.stringify(favorites));
+      return fact.id;
+    }
+  }
+);
+
+// Slice
 const numbersFactSlice = createSlice({
   name: 'numbersFact',
   initialState: {
     facts: [],
+    favorites: [],
     status: 'idle',
     error: null,
   },
   reducers: {
-    likeFact: (state, action) => {
-      const index = state.facts.findIndex(f => f.id === action.payload);
-      if (index !== -1) {
-        state.facts[index].is_favorite = !state.facts[index].is_favorite;
+    likeNumbersFact: (state, action) => {
+      const fact = state.facts.find(f => f.id === action.payload);
+      if (fact) {
+        fact.is_favorite = !fact.is_favorite;
       }
-      console.log('liked in redux');
+    },
+    clearFacts: (state) => {
+      state.facts = [];
+      state.status = 'idle';
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchMathFact.pending, (state) => {
+      .addCase(fetchNumbersFact.pending, (state) => {
         state.status = 'loading';
-        state.error = null;
       })
-      .addCase(fetchMathFact.fulfilled, (state, action) => {
+      .addCase(fetchNumbersFact.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.facts.push({ ...action.payload, is_favorite: false });
+        const fact = {
+          ...action.payload,
+          id: `math-${action.payload.number}`,
+          is_favorite: state.favorites.some(f => f.external_id === `math-${action.payload.number}`)
+        };
+        state.facts = [fact];
       })
-      .addCase(fetchMathFact.rejected, (state, action) => {
+      .addCase(fetchNumbersFact.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.payload;
+        state.error = action.error.message;
       })
-      .addCase(fetchTriviaFact.pending, (state) => {
+      .addCase(fetchYearFact.pending, (state) => {
         state.status = 'loading';
-        state.error = null;
       })
-      .addCase(fetchTriviaFact.fulfilled, (state, action) => {
+      .addCase(fetchYearFact.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.facts.push({ ...action.payload, is_favorite: false });
+        const fact = {
+          ...action.payload,
+          id: `year-${action.payload.number}`,
+          is_favorite: state.favorites.some(f => f.external_id === `year-${action.payload.number}`)
+        };
+        state.facts = [fact];
       })
-      .addCase(fetchTriviaFact.rejected, (state, action) => {
+      .addCase(fetchYearFact.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.payload;
+        state.error = action.error.message;
       })
       .addCase(fetchDateFact.pending, (state) => {
         state.status = 'loading';
-        state.error = null;
       })
       .addCase(fetchDateFact.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.facts.push({ ...action.payload, is_favorite: false });
+        const fact = {
+          ...action.payload,
+          id: `date-${action.payload.number}`,
+          is_favorite: state.favorites.some(f => f.external_id === `date-${action.payload.number}`)
+        };
+        state.facts = [fact];
       })
       .addCase(fetchDateFact.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.payload;
+        state.error = action.error.message;
+      })
+      .addCase(loadNumbersFactFavoritesFromDB.fulfilled, (state, action) => {
+        state.favorites = action.payload;
+      })
+      .addCase(toggleNumbersFactLike.fulfilled, (state, action) => {
+        const factId = action.payload;
+        const fact = state.facts.find(f => f.id === factId);
+        if (fact) {
+          fact.is_favorite = !fact.is_favorite;
+        }
       });
   },
 });
 
-export const { likeFact } = numbersFactSlice.actions;
+export const { likeNumbersFact, clearFacts } = numbersFactSlice.actions;
+
+// Aliases for backward compatibility
+export const fetchMathFact = fetchNumbersFact;
+export const fetchTriviaFact = fetchNumbersFact;
+export const likeFact = likeNumbersFact;
 
 export default numbersFactSlice.reducer;

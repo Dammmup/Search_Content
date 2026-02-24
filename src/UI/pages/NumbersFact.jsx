@@ -1,19 +1,52 @@
 import React, { useState } from 'react';
 import { Button, Card, Input, Alert, Spin } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchMathFact, fetchTriviaFact, fetchDateFact, likeFact } from '../../BL/slices/numbersFactSlice';
+import { fetchMathFact, fetchTriviaFact, fetchDateFact, toggleNumbersFactLike } from '../../BL/slices/numbersFactSlice';
 import { HeartOutlined, HeartFilled } from '@ant-design/icons';
-import Buttons from '../components/SearchBar';
+import ModernNav from '../components/ModernNav';
 import { MonthDayPicker } from '../components/MonthDayPicker';
 import { BotomFooter } from '../components/BotomFooter';
+import AuthModal from '../components/AuthModal';
+import { authAPI } from '../../BL/api';
 
 export const NumbersFact = () => {
   const dispatch = useDispatch();
   const { facts, status, error } = useSelector((state) => state.numbersFact);
   const [mathNumber, setMathNumber] = useState('');
   const [triviaNumber, setTriviaNumber] = useState('');
+  const [isAuthModalVisible, setIsAuthModalVisible] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
 
-  const handleDateChange = (date) => {
+  // Функция проверки авторизации
+  const checkAuth = async () => {
+    try {
+      const userToken = localStorage.getItem('userToken');
+      if (userToken) {
+        const user = await authAPI.getUser();
+        if (user) {
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  // Обработчик изменения даты
+  const handleDateChange = async (date) => {
+    const isAuthenticated = await checkAuth();
+    if (!isAuthenticated) {
+      // Сохраняем действие и показываем модальное окно
+      setPendingAction(() => () => {
+        if (date) {
+          dispatch(fetchDateFact(date.format('M/D')));
+        }
+      });
+      setIsAuthModalVisible(true);
+      return;
+    }
+    // Если пользователь авторизован, выполняем действие
     if (date) {
       dispatch(fetchDateFact(date.format('M/D')));
     }
@@ -21,15 +54,30 @@ export const NumbersFact = () => {
 
   const handleMathInputChange = (e) => {
     setMathNumber(e.target.value);
-    setTriviaNumber(''); // Очистить другое поле
+    setTriviaNumber('');
   };
 
   const handleTriviaInputChange = (e) => {
     setTriviaNumber(e.target.value);
-    setMathNumber(''); // Очистить другое поле
+    setMathNumber('');
   };
 
-  const handleSearch = () => {
+  // Обработчик поиска
+  const handleSearch = async () => {
+    const isAuthenticated = await checkAuth();
+    if (!isAuthenticated) {
+      // Сохраняем действие и показываем модальное окно
+      setPendingAction(() => () => {
+        if (mathNumber) {
+          dispatch(fetchMathFact(mathNumber));
+        } else if (triviaNumber) {
+          dispatch(fetchTriviaFact(triviaNumber));
+        }
+      });
+      setIsAuthModalVisible(true);
+      return;
+    }
+    // Если пользователь авторизован, выполняем действие
     if (mathNumber) {
       dispatch(fetchMathFact(mathNumber));
     } else if (triviaNumber) {
@@ -37,36 +85,60 @@ export const NumbersFact = () => {
     }
   };
 
+  // Обработчик успешной авторизации
+  const handleAuthSuccess = () => {
+    setIsAuthModalVisible(false);
+    if (pendingAction) {
+      // Выполняем отложенное действие
+      pendingAction();
+      setPendingAction(null);
+    }
+  };
+
+  // Обработчик отмены авторизации
+  const handleAuthCancel = () => {
+    setIsAuthModalVisible(false);
+    setPendingAction(null);
+  };
+
   const handleLike = (fact) => {
-    console.log('liked in React');
-    dispatch(likeFact(fact.id));
+    dispatch(toggleNumbersFactLike({ fact }));
   };
 
   return (
-    <div>
-      <Buttons />
-      <div style={{ marginBottom: '10px', display: 'flex', flexDirection: 'column', alignContent: 'center', justifyContent: 'space-between', alignItems: 'center' }} >
-        <Input
-          type="number"
-          placeholder="Enter digit to Math fact"
-          value={mathNumber}
-          onChange={handleMathInputChange}
-          onPressEnter={handleSearch}
-          style={{ marginBottom: '10px', width: 300 }}
-        />
-        <Input
-          type="number"
-          placeholder="Enter digit to Trivia fact"
-          value={triviaNumber}
-          onChange={handleTriviaInputChange}
-          onPressEnter={handleSearch}
-          style={{ width: 300 }}
-        />
-        <div style={{ marginBottom: '10px', marginTop: '10px' }}>
+    <div className="page-container">
+      <ModernNav />
+      <div className="search-section">
+        <h1 className="hero-title">🔢 Интересные факты о числах</h1>
+        <p className="hero-subtitle">
+          Узнай интересные факты о любом числе
+        </p>
+        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <Input
+            type="number"
+            placeholder="Математический факт"
+            value={mathNumber}
+            onChange={handleMathInputChange}
+            onPressEnter={handleSearch}
+            style={{ width: 200 }}
+            size="large"
+          />
+          <Input
+            type="number"
+            placeholder="Интересный факт"
+            value={triviaNumber}
+            onChange={handleTriviaInputChange}
+            onPressEnter={handleSearch}
+            style={{ width: 200 }}
+            size="large"
+          />
           <MonthDayPicker onChange={handleDateChange} />
+          <Button type="primary" size="large" onClick={handleSearch}>
+            Поиск
+          </Button>
         </div>
       </div>
-      <div className="results-container" style={{ marginTop: '20px' }}>
+      <div className="results-container" style={{ marginTop: '20px', padding: '0 20px' }}>
         <div className="profile-container">
           {status === 'loading' ? (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }} >
@@ -81,7 +153,7 @@ export const NumbersFact = () => {
                 className={`fact-card ${fact.is_favorite ? 'liked' : ''}`}
                 style={{ marginTop: '20px' }}
               >
-                <p>{fact.text}</p>
+                <p style={{ fontSize: '16px', color: '#fff', lineHeight: '1.6' }}>{fact.text}</p>
                 <Button
                   type="text"
                   icon={
@@ -98,7 +170,14 @@ export const NumbersFact = () => {
           )}
         </div>
       </div>
-<BotomFooter/>
+      <BotomFooter />
+
+      {/* Модальное окно авторизации */}
+      <AuthModal
+        visible={isAuthModalVisible}
+        onLogin={handleAuthSuccess}
+        onCancel={handleAuthCancel}
+      />
     </div>
   );
 };

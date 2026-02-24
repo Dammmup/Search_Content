@@ -1,179 +1,329 @@
 /* eslint-disable react/jsx-key */
-// eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect } from 'react';
-import { Space, ConfigProvider, Button, Row, Col, Card, Image, Popover } from 'antd';
+import { Space, ConfigProvider, Button, Row, Col, Card, Image, Popover, message, Tag } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
-import { VideoCameraOutlined, CustomerServiceOutlined, FileImageOutlined, TrophyFilled, HeartFilled, HeartOutlined } from '@ant-design/icons';
+import { VideoCameraOutlined, CustomerServiceOutlined, FileImageOutlined, TrophyFilled, HeartFilled, HeartOutlined, SmileOutlined, DollarOutlined, PlayCircleOutlined, ExperimentOutlined } from '@ant-design/icons';
 import { useSelector, useDispatch } from 'react-redux';
+import AudioPlayer from 'react-h5-audio-player';
+import 'react-h5-audio-player/lib/styles.css';
 import './styles/Favorites.css';
-import Buttons from '../components/SearchBar';
-import { likeFilm } from '../../BL/slices/filmSlice';
-import { likeImage } from '../../BL/slices/imageSlice';
-import { likeCharacter } from '../../BL/slices/rickAndMortySlice';
-import { likeFact } from '../../BL/slices/numbersFactSlice';
-import { likeTrack } from '../../BL/slices/musicSlice';
-import { colors1,colors2,colors3,getActiveColors,getHoverColors } from './fitch';
+import ModernNav from '../components/ModernNav';
+import { toggleFilmLike } from '../../BL/slices/filmSlice';
+import { toggleImageLike } from '../../BL/slices/imageSlice';
+import { toggleRickAndMortyLike } from '../../BL/slices/rickAndMortySlice';
+import { toggleNumbersFactLike } from '../../BL/slices/numbersFactSlice';
+import { toggleTrackLike } from '../../BL/slices/musicSlice';
+import { toggleJokeLike } from '../../BL/slices/jokeSlice';
+import { toggleCryptoLike } from '../../BL/slices/cryptoSlice';
+import { toggleGameLike } from '../../BL/slices/gameSlice';
+import { colors1, colors2, colors3, getActiveColors, getHoverColors } from './fitch';
 import { BotomFooter } from '../components/BotomFooter';
-
+import AuthModal from '../components/AuthModal';
+import { authAPI } from '../../BL/api';
 
 export const Favorites = () => {
   const dispatch = useDispatch();
+  const [activeType, setActiveType] = useState('films');
+  const [isAuthModalVisible, setIsAuthModalVisible] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
 
-  const [activeType, setActiveType] = useState(null);
-
-  const films = useSelector((state) => state.films.films || []);
-  const images = useSelector((state) => state.images.images || []);
-  const tracks = useSelector((state) => state.music.tracks || []);
-  const characters = useSelector((state) => state.rickAndMorty.characters || []);
-  const facts = useSelector((state) => state.numbersFact.facts || []);
-  const navigate=useNavigate()
-  const handleRemoveLike = (type, id) => {
-    console.log(`Removing like for type: ${type}, id: ${id}`);
-    switch (type) {
-      case 'film':
-        console.log(id);
-        dispatch(likeFilm(id));
-        break;
-        case 'track':
-        console.log(id);
-        dispatch(likeTrack(id));
-        break;
-      case 'image':
-        console.log(id);
-        dispatch(likeImage(id));
-        break; 
-      case 'fact':
-        dispatch(likeFact(id));
-        break;
-      case 'character':
-        dispatch(likeCharacter(id));
-        break;
-      default:
-        break;
+  // Функция проверки авторизации
+  const checkAuth = async () => {
+    try {
+      const userToken = localStorage.getItem('userToken');
+      if (userToken) {
+        const user = await authAPI.getUser();
+        if (user) {
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      return false;
     }
   };
-  const content = (
-    <div style={{width:7}}>
 
-    </div>
-  );
-   // Проверка данных при изменении массивов и перенаправление
-   useEffect(() => {
-    const allData = [films, tracks, images, characters, facts];
-    const hasFavoriteData = allData.some((dataArray) => dataArray.some((item) => item.is_favorite));
+  // Данные из Redux
+  const searchFilms = useSelector((state) => state.films.films || []);
+  const searchImages = useSelector((state) => state.images.images || []);
+  const searchTracks = useSelector((state) => state.music.tracks || []);
+  const searchCharacters = useSelector((state) => state.rickAndMorty.characters || []);
+  const searchFacts = useSelector((state) => state.numbersFact.facts || []);
+  const searchJokes = useSelector((state) => state.jokes?.jokes || []);
+  const searchCoins = useSelector((state) => state.crypto?.coins || []);
+  const searchGames = useSelector((state) => state.games?.games || []);
+  const navigate = useNavigate();
 
-    if (!hasFavoriteData) {
-      navigate('/empty');
+  // Загрузка из localStorage для всех типов
+  const [localFavFilms, setLocalFavFilms] = useState([]);
+  const [localFavImages, setLocalFavImages] = useState([]);
+  const [localFavTracks, setLocalFavTracks] = useState([]);
+  const [localFavCharacters, setLocalFavCharacters] = useState([]);
+  const [localFavFacts, setLocalFavFacts] = useState([]);
+  const [localFavJokes, setLocalFavJokes] = useState([]);
+  const [localFavCoins, setLocalFavCoins] = useState([]);
+  const [localFavGames, setLocalFavGames] = useState([]);
+
+  useEffect(() => {
+    const load = (key) => {
+      const saved = localStorage.getItem(key);
+      return saved ? JSON.parse(saved) : [];
+    };
+    setLocalFavFilms(load('favorite_films'));
+    setLocalFavImages(load('favorite_images'));
+    setLocalFavTracks(load('favorite_tracks'));
+    setLocalFavCharacters(load('favorite_rickandmorty'));
+    setLocalFavFacts(load('favorite_numbersfacts'));
+    setLocalFavJokes(load('favorite_jokes'));
+    setLocalFavCoins(load('favorite_crypto'));
+    setLocalFavGames(load('favorite_games'));
+  }, []);
+
+  // Комбинируем: localStorage + Redux
+  const combine = (localItems, searchItems) => {
+    const map = new Map();
+    localItems.forEach(item => map.set(item.id || item.external_id, { ...item, is_favorite: true }));
+    searchItems.forEach(item => {
+      if (!map.has(item.id)) map.set(item.id, item);
+    });
+    return Array.from(map.values());
+  };
+
+  const films = React.useMemo(() => combine(localFavFilms, searchFilms), [localFavFilms, searchFilms]);
+  const images = React.useMemo(() => combine(localFavImages, searchImages), [localFavImages, searchImages]);
+  const tracks = React.useMemo(() => combine(localFavTracks, searchTracks), [localFavTracks, searchTracks]);
+  const characters = React.useMemo(() => combine(localFavCharacters, searchCharacters), [localFavCharacters, searchCharacters]);
+  const facts = React.useMemo(() => combine(localFavFacts, searchFacts), [localFavFacts, searchFacts]);
+  const jokes = React.useMemo(() => combine(localFavJokes, searchJokes), [localFavJokes, searchJokes]);
+  const coins = React.useMemo(() => combine(localFavCoins, searchCoins), [localFavCoins, searchCoins]);
+  const games = React.useMemo(() => combine(localFavGames, searchGames), [localFavGames, searchGames]);
+
+  const handleRemoveLike = async (type, item) => {
+    const isAuthenticated = await checkAuth();
+    const doAction = () => {
+      switch (type) {
+        case 'film':
+          dispatch(toggleFilmLike({ film: item }));
+          break;
+        case 'track':
+          dispatch(toggleTrackLike({ track: item }));
+          break;
+        case 'image':
+          dispatch(toggleImageLike({ image: item }));
+          break;
+        case 'fact':
+          dispatch(toggleNumbersFactLike({ fact: item }));
+          break;
+        case 'character':
+          dispatch(toggleRickAndMortyLike({ character: item }));
+          break;
+        case 'joke':
+          dispatch(toggleJokeLike({ joke: item }));
+          break;
+        case 'crypto':
+          dispatch(toggleCryptoLike({ coin: item }));
+          break;
+        case 'game':
+          dispatch(toggleGameLike({ game: item }));
+          break;
+        default:
+          break;
+      }
+    };
+
+    if (!isAuthenticated) {
+      message.info('Пожалуйста, авторизуйтесь для управления избранным');
+      setPendingAction(() => doAction);
+      setIsAuthModalVisible(true);
+      return;
     }
-  }, [films, tracks, images, characters, facts, navigate]);
+
+    doAction();
+  };
+
+  // Обработчик успешной авторизации
+  const handleAuthSuccess = () => {
+    setIsAuthModalVisible(false);
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
+    }
+  };
+
+  // Обработчик отмены авторизации
+  const handleAuthCancel = () => {
+    setIsAuthModalVisible(false);
+    setPendingAction(null);
+  };
+
+  const content = <div style={{ width: 7 }}></div>;
+
   const renderCards = (items, type) => {
-    console.log(items);
-    if (!items || items.length === 0) {
-      return <div style={{textAlign:'center',marginTop:'15px'}}></div>;
+    const favoriteItems = items.filter((item) => item.is_favorite);
+
+    if (!favoriteItems || favoriteItems.length === 0) {
+      return (
+        <div style={{ textAlign: 'center', marginTop: '15px' }}>
+          <p>Нет избранных элементов в этой категории</p>
+        </div>
+      );
     }
-  
+
     return (
       <div className={`results-${type}`} style={{ marginTop: '20px' }}>
-        <Row gutter={[16, 16]}>
-          {items
-            .filter((item) => item.is_favorite)
-            .map((item) => (
-              <Col key={item.id} xs={24} sm={12} md={8} lg={6}>
-                <Card
-                  className={`${type}-card liked`}
-                  hoverable
-                  title={ type === 'fact' ? item.name : item.text || item.alt_description}
-                  style={{ marginBottom: 16 }}
-                  cover={
-                    type === 'track' && item.album && item.album.images && item.album.images[0] ? (
-                      <Image alt={item.name} src={item.album.images[0].url} style={{ height: '300px', objectFit: 'cover' }} />
-                    ) : type === 'film' && item.poster && item.poster.url ? (
-                      <Image alt={item.name} src={item.poster.url} style={{ height: '300px', objectFit: 'cover' }} />
-                    ) : type === 'image' && item.urls && item.urls.raw ? (
-                      <Image alt={item.alt_description} src={item.urls.raw} style={{ height: '300px', objectFit: 'cover' }} />
-                    ) : type === 'character' && item.image ? (
-                      <Image alt={item.name} src={item.image} style={{ height: '300px', objectFit: 'cover' }} />
-                    ) : null
-                  }
-                  actions={[
-                    <Button
-                      type="text"
-                      icon={item.is_favorite ? <HeartFilled style={{ color: 'red' }} /> : <HeartOutlined />}
-                      onClick={() => handleRemoveLike(type, item.id)}
-                    />
-                  ]}
-                  
-                >
-                  <Card.Meta
-                    description={
-                      <>
-                        {type === 'track' && item.artists && item.artists.length > 0 && (
-                          <div>
-                            {item.artists[0].images && item.artists[0].images[0] && (
-                              <img alt={item.artists[0].name} src={item.artists[0].images[0].url} style={{ width: '50px', borderRadius: '50%' }} />
-                            )}
-                            <p><strong>Artist:</strong> {item.artists[0].name}</p>
-                            <p><strong>Song:</strong> {item.name}</p>
-                            {/* Проверяем, есть ли ссылки для трека */}
-                            {item.external_urls && item.external_urls.spotify && (
-                              <p><strong>Link:</strong> <a href={item.external_urls.spotify} target="_blank" rel="noopener noreferrer">Listen on Spotify</a></p>
-                            )}
-                          </div>
-                        )}
-                        {type === 'fact' && (
-                          <p><strong>Fact:</strong> {item.text}</p>
-                        )}
-                         {type === 'image' && (
-                              <p><strong>Link:</strong> <a href={item.urls.full} target="_blank" rel="noopener noreferrer">Open on full screen</a></p>
-                            )}
-                        {type === 'character' && (
-                          <div>
-                            <p><strong>Name:</strong> {item.name}</p>
-                            <p><strong>View:</strong> {item.species}</p>
-                            <p><strong>Status:</strong> {item.status}</p>
-                            <p><strong>Geolocation:</strong> {item.location.name}</p>
-                          </div>
-                        )}
-                        {item.year && <p><strong>Year:</strong> {item.year}</p>}
-                      </>
-                    }
+        <Row gutter={[24, 24]}>
+          {favoriteItems.map((item) => (
+            <Col key={item.id} xs={24} sm={12} md={8} lg={6}>
+              <Card
+                className={`${type}-card liked`}
+                hoverable
+                title={type === 'fact' ? item.name : type === 'joke' ? (item.category || 'Шутка') : item.text || item.alt_description}
+                style={{ marginBottom: 16 }}
+                cover={
+                  type === 'track' && item.image ? (
+                    <Image alt={item.name} src={item.image} style={{ height: '300px', objectFit: 'cover' }} />
+                  ) : type === 'film' && item.poster && item.poster.url ? (
+                    <Image alt={item.name} src={item.poster.url} style={{ height: '300px', objectFit: 'cover' }} />
+                  ) : type === 'image' && item.urls && item.urls.raw ? (
+                    <Image alt={item.alt_description} src={item.urls.raw} style={{ height: '300px', objectFit: 'cover' }} />
+                  ) : type === 'character' && item.image ? (
+                    <Image alt={item.name} src={item.image} style={{ height: '300px', objectFit: 'cover' }} />
+                  ) : type === 'game' && item.background_image ? (
+                    <Image alt={item.name} src={item.background_image} style={{ height: '300px', objectFit: 'cover' }} />
+                  ) : type === 'crypto' && item.image ? (
+                    <div style={{ textAlign: 'center', padding: '20px' }}>
+                      <Image alt={item.name} src={item.image} style={{ width: '80px', height: '80px' }} preview={false} />
+                    </div>
+                  ) : null
+                }
+                actions={[
+                  <Button
+                    type="text"
+                    icon={item.is_favorite ? <HeartFilled style={{ color: 'red' }} /> : <HeartOutlined />}
+                    onClick={() => handleRemoveLike(type, item)}
                   />
-                </Card>
-              </Col>
-            ))}
+                ]}
+              >
+                <Card.Meta
+                  description={
+                    <>
+                      {type === 'track' && (
+                        <div>
+                          <p><strong>Исполнитель:</strong> {item.artist_name}</p>
+                          <p><strong>Трек:</strong> {item.name}</p>
+                          {item.album_name && (
+                            <p><strong>Альбом:</strong> {item.album_name}</p>
+                          )}
+
+                          {/* Аудиоплеер — полный трек */}
+                          {item.audio && (
+                            <div className="track-player-wrapper">
+                              <AudioPlayer
+                                src={item.audio}
+                                showJumpControls={false}
+                                showDownloadProgress={false}
+                                showFilledProgress={true}
+                                layout="horizontal-reverse"
+                                customAdditionalControls={[]}
+                                customVolumeControls={[]}
+                                style={{
+                                  borderRadius: '12px',
+                                  background: 'rgba(30, 215, 96, 0.08)',
+                                  boxShadow: 'none',
+                                  marginTop: '10px',
+                                }}
+                              />
+                            </div>
+                          )}
+                          {item.track_url && (
+                            <p style={{ marginTop: '8px' }}>
+                              <a href={item.track_url} target="_blank" rel="noopener noreferrer" style={{ color: '#1db954', fontSize: '12px' }}>
+                                🎧 Открыть в Apple Music
+                              </a>
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      {type === 'fact' && (
+                        <p><strong>Факт:</strong> {item.text}</p>
+                      )}
+                      {type === 'image' && (
+                        <p><strong>Ссылка:</strong> <a href={item.urls?.full} target="_blank" rel="noopener noreferrer">Открыть на весь экран</a></p>
+                      )}
+                      {type === 'character' && (
+                        <div>
+                          <p><strong>Имя:</strong> {item.name}</p>
+                          <p><strong>Вид:</strong> {item.species}</p>
+                          <p><strong>Статус:</strong> {item.status}</p>
+                          <p><strong>Локация:</strong> {item.location?.name}</p>
+                        </div>
+                      )}
+                      {type === 'joke' && (
+                        <div>
+                          {item.setup ? (
+                            <>
+                              <p>🤔 {item.setup}</p>
+                              <p style={{ color: '#4facfe', fontWeight: 600 }}>📣 {item.delivery}</p>
+                            </>
+                          ) : (
+                            <p>{item.joke}</p>
+                          )}
+                        </div>
+                      )}
+                      {type === 'crypto' && (
+                        <div>
+                          <p><strong>{item.name}</strong> ({item.symbol?.toUpperCase()})</p>
+                          {item.current_price && <p><strong>Цена:</strong> ${item.current_price?.toLocaleString()}</p>}
+                          {item.price_change_percentage_24h != null && (
+                            <Tag color={item.price_change_percentage_24h >= 0 ? 'success' : 'error'}>
+                              {item.price_change_percentage_24h >= 0 ? '+' : ''}{item.price_change_percentage_24h?.toFixed(2)}%
+                            </Tag>
+                          )}
+                        </div>
+                      )}
+                      {type === 'game' && (
+                        <div>
+                          <p><strong>{item.name}</strong></p>
+                          {item.released && <p><strong>Дата выхода:</strong> {item.released}</p>}
+                          {item.rating && <p><strong>Рейтинг:</strong> ⭐ {item.rating}</p>}
+                        </div>
+                      )}
+                      {item.year && <p><strong>Год:</strong> {item.year}</p>}
+                    </>
+                  }
+                />
+              </Card>
+            </Col>
+          ))}
         </Row>
       </div>
     );
   };
-  
+
+  // Цвета для новых кнопок
+  const colors4 = ['#f093fb', '#f5576c'];
+  const colors5 = ['#4facfe', '#00f2fe'];
+  const colors6 = ['#43e97b', '#38f9d7'];
+
   return (
-    <>
-      <Buttons />
+    <div className="page-container">
+      <ModernNav />
 
-      <div className="lol">
-        <ConfigProvider
-          theme={{
-            components: {
-              Button: {
-                colorPrimary: `linear-gradient(135deg, ${colors1.join(', ')})`,
-                colorPrimaryHover: `linear-gradient(135deg, ${getHoverColors(colors1).join(', ')})`,
-                colorPrimaryActive: `linear-gradient(135deg, ${getActiveColors(colors1).join(', ')})`,
-                lineWidth: 0,
-              },
-            },
-          }}
-        >
-          <Link to="/">
-            <Button type="primary" size="large">
-               Go back
-            </Button>
-          </Link>
-        </ConfigProvider>
+      <div className="search-section">
+        <h1 className="hero-title">❤️ Избранное</h1>
+        <p className="hero-subtitle">
+          Твой список понравившихся материалов
+        </p>
+        <Link to="/">
+          <Button type="primary" size="large">
+            На главную
+          </Button>
+        </Link>
       </div>
-      <div className="kek">
-        <Space className="chep">
 
-      
+      <div style={{ padding: '20px' }}>
+        <Space className="chep" wrap>
+          {/* Фильмы */}
           <ConfigProvider
             theme={{
               components: {
@@ -186,12 +336,12 @@ export const Favorites = () => {
               },
             }}
           >
-              <Popover title="Movies" content={content}>
-            <Button type="primary" size="large" icon={<VideoCameraOutlined />} onClick={() => setActiveType('films')} />
+            <Popover title="Фильмы" content={content}>
+              <Button type="primary" size="large" icon={<VideoCameraOutlined />} onClick={() => setActiveType('films')} />
             </Popover>
           </ConfigProvider>
-         
 
+          {/* Музыка */}
           <ConfigProvider
             theme={{
               components: {
@@ -207,7 +357,7 @@ export const Favorites = () => {
             <Button type="primary" size="large" icon={<CustomerServiceOutlined />} onClick={() => setActiveType('tracks')} />
           </ConfigProvider>
 
-
+          {/* Картинки */}
           <ConfigProvider
             theme={{
               components: {
@@ -223,7 +373,7 @@ export const Favorites = () => {
             <Button type="primary" size="large" icon={<FileImageOutlined />} onClick={() => setActiveType('images')} />
           </ConfigProvider>
 
-
+          {/* Рик и Морти */}
           <ConfigProvider
             theme={{
               components: {
@@ -236,13 +386,12 @@ export const Favorites = () => {
               },
             }}
           >
-             <Button type="primary" size="large" onClick={() => setActiveType('characters')}>
-               <img src="data:image/png;base64,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"
-                style={{width:30}}/>
-            </Button>
+            <Popover title="Рик и Морти" content={content}>
+              <Button type="primary" size="large" icon={<TrophyFilled />} onClick={() => setActiveType('characters')} />
+            </Popover>
           </ConfigProvider>
 
-
+          {/* Факты */}
           <ConfigProvider
             theme={{
               components: {
@@ -255,26 +404,86 @@ export const Favorites = () => {
               },
             }}
           >
-            <Button type="primary" size="large" icon={<TrophyFilled />} onClick={() => setActiveType('facts')} />
+            <Popover title="Факты о числах" content={content}>
+              <Button type="primary" size="large" icon={<ExperimentOutlined />} onClick={() => setActiveType('facts')} />
+            </Popover>
           </ConfigProvider>
 
+          {/* Шутки */}
+          <ConfigProvider
+            theme={{
+              components: {
+                Button: {
+                  colorPrimary: `linear-gradient(135deg, ${colors4.join(', ')})`,
+                  colorPrimaryHover: `linear-gradient(135deg, ${getHoverColors(colors4).join(', ')})`,
+                  colorPrimaryActive: `linear-gradient(135deg, ${getActiveColors(colors4).join(', ')})`,
+                  lineWidth: 0,
+                },
+              },
+            }}
+          >
+            <Popover title="Шутки" content={content}>
+              <Button type="primary" size="large" icon={<SmileOutlined />} onClick={() => setActiveType('jokes')} />
+            </Popover>
+          </ConfigProvider>
 
+          {/* Крипто */}
+          <ConfigProvider
+            theme={{
+              components: {
+                Button: {
+                  colorPrimary: `linear-gradient(135deg, ${colors5.join(', ')})`,
+                  colorPrimaryHover: `linear-gradient(135deg, ${getHoverColors(colors5).join(', ')})`,
+                  colorPrimaryActive: `linear-gradient(135deg, ${getActiveColors(colors5).join(', ')})`,
+                  lineWidth: 0,
+                },
+              },
+            }}
+          >
+            <Popover title="Криптовалюты" content={content}>
+              <Button type="primary" size="large" icon={<DollarOutlined />} onClick={() => setActiveType('crypto')} />
+            </Popover>
+          </ConfigProvider>
+
+          {/* Игры */}
+          <ConfigProvider
+            theme={{
+              components: {
+                Button: {
+                  colorPrimary: `linear-gradient(135deg, ${colors6.join(', ')})`,
+                  colorPrimaryHover: `linear-gradient(135deg, ${getHoverColors(colors6).join(', ')})`,
+                  colorPrimaryActive: `linear-gradient(135deg, ${getActiveColors(colors6).join(', ')})`,
+                  lineWidth: 0,
+                },
+              },
+            }}
+          >
+            <Popover title="Игры" content={content}>
+              <Button type="primary" size="large" icon={<PlayCircleOutlined />} onClick={() => setActiveType('games')} />
+            </Popover>
+          </ConfigProvider>
         </Space>
       </div>
 
-
-
-      <div className="results-container" >
+      <div className="results-container">
         {activeType === 'films' && renderCards(films, 'film')}
         {activeType === 'tracks' && renderCards(tracks, 'track')}
         {activeType === 'images' && renderCards(images, 'image')}
         {activeType === 'characters' && renderCards(characters, 'character')}
         {activeType === 'facts' && renderCards(facts, 'fact')}
+        {activeType === 'jokes' && renderCards(jokes, 'joke')}
+        {activeType === 'crypto' && renderCards(coins, 'crypto')}
+        {activeType === 'games' && renderCards(games, 'game')}
       </div>
 
+      <BotomFooter />
 
-<BotomFooter/>
-    </>
+      {/* Модальное окно авторизации */}
+      <AuthModal
+        visible={isAuthModalVisible}
+        onLogin={handleAuthSuccess}
+        onCancel={handleAuthCancel}
+      />
+    </div>
   );
 };
-

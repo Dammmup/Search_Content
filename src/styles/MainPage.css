@@ -1,3 +1,181 @@
+/* ========== Главная страница - Современный дизайн ========== */
+.main-page {
+  min-height: 100vh;
+  animation: fadeIn 0.5s ease;
+}
+
+.hero-section {
+  padding: 60px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 60px;
+}
+
+.hero-content {
+  text-align: center;
+  max-width: 800px;
+}
+
+.hero-section .hero-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea 0%, #f5576c 50%, #ffd700 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1.5rem;
+  animation: glow 3s ease-in-out infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-section .hero-subtitle {
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  line-height: 1.8;
+  margin-bottom: 2rem;
+}
+
+.hero-cta {
+  margin-top: 2rem;
+}
+
+.cta-button {
+  height: 56px !important;
+  padding: 0 40px !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  border-radius: 28px !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  box-shadow: 0 10px 40px rgba(102, 126, 234, 0.4) !important;
+  transition: all 0.3s ease !important;
+}
+
+.cta-button:hover {
+  transform: translateY(-3px) scale(1.05) !important;
+  box-shadow: 0 15px 50px rgba(102, 126, 234, 0.6) !important;
+}
+
+/* Карточки функций */
+.hero-features {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  max-width: 1000px;
+  width: 100%;
+}
+
+.feature-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--card-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  background: var(--card-bg-hover);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.feature-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.feature-info h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 4px 0;
+}
+
+.feature-info p {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Секция статистики */
+.stats-section {
+  display: flex;
+  justify-content: center;
+  gap: 80px;
+  padding: 60px 40px;
+  background: rgba(255, 255, 255, 0.03);
+  border-top: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-item h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 10px 0 5px 0;
+}
+
+.stat-item p {
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+/* Медиазапросы */
+@media (max-width: 1024px) {
+  .hero-features {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 40px 20px;
+  }
+
+  .hero-section .hero-title {
+    font-size: 3rem;
+  }
+
+  .hero-section .hero-subtitle {
+    font-size: 1.1rem;
+  }
+
+  .hero-features {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+  }
+
+  .stats-section {
+    flex-direction: column;
+    gap: 40px;
+    align-items: center;
+  }
+
+  .stat-item h3 {
+    font-size: 2rem;
+  }
+}
+
 /* Основные стили */
 .main-container {
   display: flex;
@@ -7,8 +185,6 @@
   flex-wrap: wrap;
 }
 
-
-
 .profile-container {
   text-align: center;
   margin-top: -45vh;
@@ -16,18 +192,4 @@
 
 .text {
   font-size: 2em;
-}
-
-/* Медиазапросы */
-@media (max-width: 768px) {
-  .profile-container {
-    margin-top: 0;
-    padding: 0 10px;
-  }
-
-  .text {
-    font-size: 1.5em;
-  }
-
-
 }

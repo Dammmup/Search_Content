@@ -1,16 +1,19 @@
-.chep{
+.chep {
     display: flex;
-    justify-content: space-evenly;
+    justify-content: center;
     align-items: center;
+    gap: 16px;
     margin-top: 3%;
 }
-.lol{
+
+.lol {
     margin-top: 3%;
     display: flex;
     justify-content: center;
     align-items: center;
 }
-.kek{
+
+.kek {
     display: flex;
     justify-content: space-around;
 }

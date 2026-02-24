@@ -1,43 +1,100 @@
-// src/store/musicSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { favoritesAPI, authAPI } from '../api';
 
-const CLIENT_ID = 'b3819ae69ef647abb1d892c56315085e';
-const CLIENT_SECRET = '085247e350df45de93e700d04cd34231';
+// iTunes Search API — бесплатно, без ключа, 30сек превью коммерческих треков
+const ITUNES_API_URL = 'https://itunes.apple.com/search';
 
-// Получение Spotify токена
-const getSpotifyToken = async () => {
-  const response = await axios.post('https://accounts.spotify.com/api/token', null, {
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': 'Basic ' + btoa(`${CLIENT_ID}:${CLIENT_SECRET}`)
-    },
-    params: {
-      grant_type: 'client_credentials'
-    }
-  });
-  return response.data.access_token;
-};
-
-// Асинхронный thunk для поиска музыки
 export const fetchMusic = createAsyncThunk(
   'music/fetchMusic',
   async (query, { rejectWithValue }) => {
     try {
-      const token = await getSpotifyToken();
-      const response = await axios.get('https://api.spotify.com/v1/search', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
+      const response = await axios.get(ITUNES_API_URL, {
         params: {
-          q: query,
-          type: 'track'
+          term: query,
+          entity: 'song',
+          media: 'music',
+          limit: 20,
         }
       });
-      return response.data.tracks.items;
+
+      if (!response.data.results || response.data.results.length === 0) {
+        return rejectWithValue('Ничего не найдено');
+      }
+
+      // Маппинг данных iTunes под единую структуру
+      return response.data.results.map(track => ({
+        id: String(track.trackId),
+        name: track.trackName,
+        artist_name: track.artistName,
+        artist_id: String(track.artistId),
+        album_name: track.collectionName || 'Сингл',
+        image: track.artworkUrl100?.replace('100x100', '300x300') || track.artworkUrl60,
+        audio: track.previewUrl, // 30сек mp3 превью
+        duration: Math.round(track.trackTimeMillis / 1000), // из мс в секунды
+        genre: track.primaryGenreName,
+        track_url: track.trackViewUrl,
+        release_date: track.releaseDate,
+        is_favorite: false,
+      }));
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Error fetching data from Spotify');
+      return rejectWithValue(error.message || 'Ошибка при поиске музыки');
     }
+  }
+);
+
+export const loadMusicFavoritesFromDB = createAsyncThunk(
+  'music/loadFavoritesFromDB',
+  async () => {
+    try {
+      const user = await authAPI.getUser();
+      if (!user) {
+        const saved = localStorage.getItem('favorite_tracks');
+        return saved ? JSON.parse(saved) : [];
+      }
+      const response = await favoritesAPI.getAll(user.id, 'track');
+      return response;
+    } catch (error) {
+      const saved = localStorage.getItem('favorite_tracks');
+      return saved ? JSON.parse(saved) : [];
+    }
+  }
+);
+
+export const toggleTrackLike = createAsyncThunk(
+  'music/toggleTrackLike',
+  async ({ track }, { getState }) => {
+    const { music } = getState();
+    const currentTrack = music.tracks.find(t => t.id === track.id);
+    const isFavorite = currentTrack?.is_favorite;
+
+    // Пробуем сохранить в Supabase
+    try {
+      const user = await authAPI.getUser();
+      if (!user) throw new Error('Не авторизован');
+
+      if (isFavorite) {
+        const result = await favoritesAPI.remove(user.id, 'track', track.id);
+        if (result.error) throw new Error(result.error);
+      } else {
+        const result = await favoritesAPI.add(user.id, 'track', track.id, track);
+        if (result.error && result.error !== 'Уже в избранном') throw new Error(result.error);
+      }
+    } catch (error) {
+      // Fallback: сохраняем в localStorage
+      console.warn('Supabase недоступен, сохраняю в localStorage:', error.message);
+      const saved = localStorage.getItem('favorite_tracks');
+      let favorites = saved ? JSON.parse(saved) : [];
+      const index = favorites.findIndex(t => t.id === track.id);
+      if (index >= 0) {
+        favorites.splice(index, 1);
+      } else {
+        favorites.push({ ...track, is_favorite: true });
+      }
+      localStorage.setItem('favorite_tracks', JSON.stringify(favorites));
+    }
+
+    return track.id;
   }
 );
 
@@ -45,7 +102,8 @@ const musicSlice = createSlice({
   name: 'music',
   initialState: {
     tracks: [],
-    status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
+    favorites: [],
+    status: 'idle',
     error: null,
   },
   reducers: {
@@ -53,8 +111,8 @@ const musicSlice = createSlice({
       state.tracks = state.tracks.map(track =>
         track.id === action.payload ? { ...track, is_favorite: !track.is_favorite } : track
       );
-      console.log("liked in redux");
-    }},
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchMusic.pending, (state) => {
@@ -63,14 +121,26 @@ const musicSlice = createSlice({
       })
       .addCase(fetchMusic.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.tracks = action.payload.map(m => ({...m, is_favorite: false}));
+        state.tracks = action.payload.map(m => ({
+          ...m,
+          is_favorite: state.favorites.some(f => f.external_id === String(m.id))
+        }));
       })
       .addCase(fetchMusic.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
+      })
+      .addCase(loadMusicFavoritesFromDB.fulfilled, (state, action) => {
+        state.favorites = action.payload;
+      })
+      .addCase(toggleTrackLike.fulfilled, (state, action) => {
+        const trackId = action.payload;
+        state.tracks = state.tracks.map(track =>
+          track.id === trackId ? { ...track, is_favorite: !track.is_favorite } : track
+        );
       });
   },
 });
-export const { likeTrack } = musicSlice.actions;
 
+export const { likeTrack } = musicSlice.actions;
 export default musicSlice.reducer;

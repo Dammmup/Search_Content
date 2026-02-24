@@ -1,70 +1,191 @@
-.posiciya{
+/* ========== Современная навигация ========== */
+.modern-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  animation: slideDown 0.5s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nav-logo {
+  flex-shrink: 0;
+}
+
+.logo-img {
+  width: 140px;
+  transition: transform 0.3s ease;
+  animation: float 3s ease-in-out infinite;
+}
+
+.logo-img:hover {
+  transform: scale(1.05);
+}
+
+.nav-categories {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 0 20px;
+}
+
+.nav-btn {
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  height: 42px !important;
+  padding: 0 20px !important;
+  border-radius: 12px !important;
+  transition: all 0.3s ease !important;
+}
+
+.nav-btn:hover {
+  transform: translateY(-3px) scale(1.02) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.nav-actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  width: 45px !important;
+  height: 45px !important;
+  font-size: 18px !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease !important;
+}
+
+.action-btn:hover {
+  transform: scale(1.1) !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border-color: transparent !important;
+  box-shadow: 0 0 20px rgba(102, 126, 234, 0.5) !important;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 1200px) {
+  .nav-categories {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .nav-btn {
+    font-size: 12px !important;
+    height: 36px !important;
+    padding: 0 14px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .modern-nav {
+    flex-direction: column;
+    padding: 15px;
+    gap: 15px;
+  }
+
+  .nav-categories {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .logo-img {
+    width: 100px;
+  }
+
+  .action-btn {
+    width: 40px !important;
+    height: 40px !important;
+  }
+}
+
+/* Старые стили (для обратной совместимости) */
+.posiciya {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+.buttons-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+}
+
+.logo-container {
+  margin-bottom: 20px;
+}
+
+.logo-button {
+  padding: 0;
+}
+
+.buttons-space {
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.nav-button {
+  margin: 5px;
+}
+
+.action-button {
+  margin: 5px;
+}
+
+@media (max-width: 768px) {
+  .logo-img {
+    width: 80px;
+  }
+
+  .nav-button {
+    font-size: 0.8em;
+  }
+
+  .action-button {
+    font-size: 0.8em;
+  }
+
+  .posiciya {
     display: flex;
     justify-content: space-evenly;
     align-items: center;
-}
-  .buttons-container{
-    display: flex;
-align-items: center;  
-justify-content: space-evenly;
-}
-  .logo-container {
-    margin-bottom: 20px;
-  }
-  
-  .logo-button {
-    padding: 0;
-  }
-  
-  .logo-img {
-    width: 100px; /* Уменьшение размера логотипа */
-  }
-  
-  .buttons-space {
     flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 50%;
   }
-  
-  .nav-button {
-    margin: 5px;
+
+  .buttons-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
   }
-  
-  .action-button {
-    margin: 5px;
+
+  .buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
   }
-  
-  /* Медиазапросы */
-  @media (max-width: 768px) {
-    .logo-img {
-      width: 80px; /* Уменьшение размера логотипа на мобильных устройствах */
-    }
-  
-    .nav-button {
-      font-size: 0.8em; /* Уменьшение размера текста кнопок навигации */
-    }
-  
-    .action-button {
-      font-size: 0.8em; /* Уменьшение размера текста кнопок действий */
-    }
-    .posiciya{
-        display: flex;
-        justify-content: space-evenly;
-        align-items: center;
-        flex-wrap: wrap;
-        margin-bottom: 50%;
-    }
-    .buttons-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 10px;
-      }
-      .buttons{
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 10px;
-      }
-  }
-  
+}
