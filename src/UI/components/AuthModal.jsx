@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Input, Alert } from 'antd';
-import { LockOutlined, MailOutlined } from '@ant-design/icons';
+import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { authAPI } from '../../BL/api';
 
 const AuthModal = ({ visible, onLogin, onCancel }) => {
@@ -47,13 +47,9 @@ const AuthModal = ({ visible, onLogin, onCancel }) => {
           localStorage.setItem('userToken', result.session?.access_token || '');
           localStorage.setItem('userEmail', result.user.email);
           localStorage.setItem('userId', result.user.id);
-
-          // Если email требует подтверждения
-          if (result.user.email_confirmed_at) {
-            onLogin();
-          } else {
-            setError('На вашу почту отправлено письмо для подтверждения. Пожалуйста, проверьте почту.');
-          }
+          
+          // Эмулируем мгновенный вход без подтверждения почты
+          onLogin();
         }
       }
     } catch (err) {
@@ -61,9 +57,9 @@ const AuthModal = ({ visible, onLogin, onCancel }) => {
 
       // Обработка ошибок Supabase
       if (err.message?.includes('Invalid login')) {
-        setError('Неправильный email или пароль');
+        setError('Неправильный логин или пароль');
       } else if (err.message?.includes('User already registered')) {
-        setError('Пользователь с таким email уже существует');
+        setError('Пользователь с таким логином уже существует');
       } else if (err.message?.includes('Password')) {
         setError('Пароль должен содержать минимум 6 символов');
       } else if (err.message?.includes('network')) {
@@ -110,14 +106,14 @@ const AuthModal = ({ visible, onLogin, onCancel }) => {
         initialValues={{ email: '', password: '' }}
       >
         <Form.Item
-          label="Email или логин"
+          label="Логин"
           name="email"
-          rules={[{ required: true, message: 'Пожалуйста, введите email или логин' }]}
+          rules={[{ required: true, message: 'Пожалуйста, введите логин' }]}
         >
           <Input
-            prefix={<MailOutlined style={{ color: '#667eea' }} />}
-            placeholder="Введите email или логин"
-            autoComplete="email"
+            prefix={<UserOutlined style={{ color: '#667eea' }} />}
+            placeholder="Введите логин"
+            autoComplete="username"
           />
         </Form.Item>
 

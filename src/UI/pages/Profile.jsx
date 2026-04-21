@@ -48,7 +48,7 @@ export const Profile = () => {
     checkAuth();
   }, []);
 
-  const username = user ? user.email || user.id : 'Гость';
+  const username = user ? (user.email ? user.email.split('@')[0] : user.id) : 'Гость';
 
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const [countMedia, setCountMedia] = useState(0);
