@@ -2,22 +2,42 @@ import { supabase, isSupabaseConfigured } from './supabase';
 
 // === AUTH с Supabase ===
 export const authAPI = {
-    // Регистрация через Supabase Auth
-    register: async (login, password) => {
+    // Регистрация через Supabase Auth (Email)
+    register: async (email, password) => {
         if (!isSupabaseConfigured()) {
             throw new Error('Supabase не настроен');
         }
-        const { data, error } = await supabase.auth.signUp({ email: login, password });
+        const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         return data;
     },
 
-    // Вход через Supabase Auth
-    login: async (login, password) => {
+    // Регистрация через Supabase Auth (Phone)
+    registerWithPhone: async (phone, password) => {
         if (!isSupabaseConfigured()) {
             throw new Error('Supabase не настроен');
         }
-        const { data, error } = await supabase.auth.signInWithPassword({ email: login, password });
+        const { data, error } = await supabase.auth.signUp({ phone, password });
+        if (error) throw error;
+        return data;
+    },
+
+    // Вход через Supabase Auth (Email)
+    login: async (email, password) => {
+        if (!isSupabaseConfigured()) {
+            throw new Error('Supabase не настроен');
+        }
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        return data;
+    },
+
+    // Вход через Supabase Auth (Phone)
+    loginWithPhone: async (phone, password) => {
+        if (!isSupabaseConfigured()) {
+            throw new Error('Supabase не настроен');
+        }
+        const { data, error } = await supabase.auth.signInWithPassword({ phone, password });
         if (error) throw error;
         return data;
     },
@@ -36,7 +56,7 @@ export const authAPI = {
         } catch (error) {
             if (error?.message?.includes('Failed to fetch')) {
                 localStorage.removeItem('userToken');
-                localStorage.removeItem('userLogin');
+                localStorage.removeItem('userEmail');
                 localStorage.removeItem('userId');
             }
             throw error;
@@ -77,7 +97,6 @@ export const favoritesAPI = {
             return [];
         }
 
-        // Получаем последние добавления из favorites, а также username пользователя
         const { data, error } = await supabase
             .from('favorites')
             .select(`

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Input, Alert } from 'antd';
-import { LockOutlined, UserOutlined } from '@ant-design/icons';
+import { Modal, Button, Form, Input, Alert, Tabs } from 'antd';
+import { LockOutlined, UserOutlined, PhoneOutlined, MailOutlined } from '@ant-design/icons';
 import { authAPI } from '../../BL/api';
 
 const AuthModal = ({ visible, onLogin, onCancel }) => {
@@ -8,12 +8,14 @@ const AuthModal = ({ visible, onLogin, onCancel }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [authMethod, setAuthMethod] = useState('email'); // 'email' or 'phone'
 
   useEffect(() => {
     if (visible) {
       form.resetFields();
       setError(null);
       setIsLogin(true);
+      setAuthMethod('email');
     }
   }, [visible, form]);
 
@@ -21,51 +23,56 @@ const AuthModal = ({ visible, onLogin, onCancel }) => {
     setLoading(true);
     setError(null);
 
-    // Поддержка логина через "user" -> "user@admin.com"
-    let loginIdentifier = values.login;
-    if (!loginIdentifier.includes('@')) {
-      // Если введено без @, считаем это именем пользователя
-      loginIdentifier = `${loginIdentifier}@admin.com`;
-    }
+    const { email, phone, password, login } = values;
 
     try {
+      let result;
       if (isLogin) {
-        // Вход через Supabase
-        const result = await authAPI.login(loginIdentifier, values.password);
+        if (authMethod === 'email') {
+          // Поддержка "user" -> "user@admin.com"
+          let emailIdentifier = email || login;
+          if (emailIdentifier && !emailIdentifier.includes('@')) {
+            emailIdentifier = `${emailIdentifier}@admin.com`;
+          }
+          result = await authAPI.login(emailIdentifier, password);
+        } else {
+          result = await authAPI.loginWithPhone(phone, password);
+        }
 
         if (result.user) {
           localStorage.setItem('userToken', result.session.access_token);
-          localStorage.setItem('userLogin', result.user.email);
+          localStorage.setItem('userEmail', result.user.email || result.user.phone);
           localStorage.setItem('userId', result.user.id);
           onLogin();
         }
       } else {
-        // Регистрация через Supabase
-        const result = await authAPI.register(loginIdentifier, values.password);
+        if (authMethod === 'email') {
+          let emailIdentifier = email || login;
+          if (emailIdentifier && !emailIdentifier.includes('@')) {
+            emailIdentifier = `${emailIdentifier}@admin.com`;
+          }
+          result = await authAPI.register(emailIdentifier, password);
+        } else {
+          result = await authAPI.registerWithPhone(phone, password);
+        }
 
         if (result.user) {
           localStorage.setItem('userToken', result.session?.access_token || '');
-          localStorage.setItem('userLogin', result.user.email);
+          localStorage.setItem('userEmail', result.user.email || result.user.phone);
           localStorage.setItem('userId', result.user.id);
-          
-          // Эмулируем мгновенный вход
           onLogin();
         }
       }
     } catch (err) {
       console.error('Auth error:', err);
-
-      // Обработка ошибок Supabase
       if (err.message?.includes('Invalid login')) {
         setError('Неправильный логин или пароль');
       } else if (err.message?.includes('User already registered')) {
-        setError('Пользователь с таким логином уже существует');
+        setError('Пользователь уже существует');
       } else if (err.message?.includes('Email not confirmed')) {
-        setError('Аккаунт требует подтверждения. Пожалуйста, обратитесь к администратору (необходимо отключить "Confirm email" в Supabase Dashboard)');
+        setError('Почта не подтверждена. Пожалуйста, проверьте папку "Спам" или обратитесь в поддержку.');
       } else if (err.message?.includes('Password')) {
         setError('Пароль должен содержать минимум 6 символов');
-      } else if (err.message?.includes('network')) {
-        setError('Ошибка сети. Проверьте подключение к интернету');
       } else {
         setError(err.message || 'Произошла ошибка. Попробуйте позже');
       }
@@ -79,6 +86,49 @@ const AuthModal = ({ visible, onLogin, onCancel }) => {
     setError(null);
     form.resetFields();
   };
+
+  const items = [
+    {
+      key: 'email',
+      label: (
+        <span>
+          <MailOutlined /> Почта
+        </span>
+      ),
+      children: (
+        <Form.Item
+          label="Email / Логин"
+          name="email"
+          rules={[{ required: true, message: 'Пожалуйста, введите Email или Логин' }]}
+        >
+          <Input
+            prefix={<UserOutlined style={{ color: '#667eea' }} />}
+            placeholder="example@mail.ru"
+          />
+        </Form.Item>
+      ),
+    },
+    {
+      key: 'phone',
+      label: (
+        <span>
+          <PhoneOutlined /> Телефон
+        </span>
+      ),
+      children: (
+        <Form.Item
+          label="Номер телефона"
+          name="phone"
+          rules={[{ required: true, message: 'Пожалуйста, введите номер телефона' }]}
+        >
+          <Input
+            prefix={<PhoneOutlined style={{ color: '#667eea' }} />}
+            placeholder="+7 (XXX) XXX-XX-XX"
+          />
+        </Form.Item>
+      ),
+    },
+  ];
 
   return (
     <Modal
@@ -100,25 +150,21 @@ const AuthModal = ({ visible, onLogin, onCancel }) => {
         />
       )}
 
+      <Tabs 
+        centered 
+        activeKey={authMethod} 
+        onChange={setAuthMethod}
+        items={items}
+        style={{ marginBottom: 10 }}
+      />
+
       <Form
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
         size="large"
-        initialValues={{ login: '', password: '' }}
       >
-        <Form.Item
-          label="Логин"
-          name="login"
-          rules={[{ required: true, message: 'Пожалуйста, введите логин' }]}
-        >
-          <Input
-            prefix={<UserOutlined style={{ color: '#667eea' }} />}
-            placeholder="Введите логин"
-            autoComplete="username"
-          />
-        </Form.Item>
-
+        {/* Поля вставляются из Tabs выше, но пароль общий */}
         <Form.Item
           label="Пароль"
           name="password"

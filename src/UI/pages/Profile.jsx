@@ -48,7 +48,7 @@ export const Profile = () => {
     checkAuth();
   }, []);
 
-  const username = user ? (user.email ? user.email.split('@')[0] : user.id) : 'Гость';
+  const username = user ? (user.email || user.phone || user.id) : 'Гость';
 
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const [countMedia, setCountMedia] = useState(0);
@@ -98,7 +98,7 @@ export const Profile = () => {
 
     setIsLogoutModalVisible(false);
     localStorage.removeItem('userToken');
-    localStorage.removeItem('userLogin');
+    localStorage.removeItem('userEmail');
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
     setUser(null);
@@ -117,7 +117,7 @@ export const Profile = () => {
     }
 
     localStorage.removeItem('userToken');
-    localStorage.removeItem('userLogin');
+    localStorage.removeItem('userEmail');
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
     setUser(null);
@@ -225,6 +225,9 @@ export const Profile = () => {
 
             <div className="profile-section">
               <Title level={4}>Аккаунт создан: {user ? new Date(user.created_at || user.aud).toLocaleDateString() : 'Неизвестно'}</Title>
+              <Text type="secondary">
+                {user.email ? `Почта: ${user.email}` : user.phone ? `Телефон: ${user.phone}` : ''}
+              </Text>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
