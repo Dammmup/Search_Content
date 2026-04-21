@@ -22,33 +22,33 @@ const AuthModal = ({ visible, onLogin, onCancel }) => {
     setError(null);
 
     // Поддержка логина через "user" -> "user@admin.com"
-    let email = values.email;
-    if (!email.includes('@')) {
+    let loginIdentifier = values.login;
+    if (!loginIdentifier.includes('@')) {
       // Если введено без @, считаем это именем пользователя
-      email = `${email}@admin.com`;
+      loginIdentifier = `${loginIdentifier}@admin.com`;
     }
 
     try {
       if (isLogin) {
         // Вход через Supabase
-        const result = await authAPI.login(email, values.password);
+        const result = await authAPI.login(loginIdentifier, values.password);
 
         if (result.user) {
           localStorage.setItem('userToken', result.session.access_token);
-          localStorage.setItem('userEmail', result.user.email);
+          localStorage.setItem('userLogin', result.user.email);
           localStorage.setItem('userId', result.user.id);
           onLogin();
         }
       } else {
         // Регистрация через Supabase
-        const result = await authAPI.register(email, values.password);
+        const result = await authAPI.register(loginIdentifier, values.password);
 
         if (result.user) {
           localStorage.setItem('userToken', result.session?.access_token || '');
-          localStorage.setItem('userEmail', result.user.email);
+          localStorage.setItem('userLogin', result.user.email);
           localStorage.setItem('userId', result.user.id);
           
-          // Эмулируем мгновенный вход без подтверждения почты
+          // Эмулируем мгновенный вход
           onLogin();
         }
       }
@@ -60,6 +60,8 @@ const AuthModal = ({ visible, onLogin, onCancel }) => {
         setError('Неправильный логин или пароль');
       } else if (err.message?.includes('User already registered')) {
         setError('Пользователь с таким логином уже существует');
+      } else if (err.message?.includes('Email not confirmed')) {
+        setError('Аккаунт требует подтверждения. Пожалуйста, обратитесь к администратору (необходимо отключить "Confirm email" в Supabase Dashboard)');
       } else if (err.message?.includes('Password')) {
         setError('Пароль должен содержать минимум 6 символов');
       } else if (err.message?.includes('network')) {
@@ -103,11 +105,11 @@ const AuthModal = ({ visible, onLogin, onCancel }) => {
         layout="vertical"
         onFinish={handleSubmit}
         size="large"
-        initialValues={{ email: '', password: '' }}
+        initialValues={{ login: '', password: '' }}
       >
         <Form.Item
           label="Логин"
-          name="email"
+          name="login"
           rules={[{ required: true, message: 'Пожалуйста, введите логин' }]}
         >
           <Input

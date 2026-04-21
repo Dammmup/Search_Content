@@ -82,7 +82,6 @@ export const Profile = () => {
   const handleLogout = async () => {
     const isAuthenticated = await checkAuth();
     if (!isAuthenticated) {
-      // Если пользователь не авторизован, перенаправляем на главную
       navigate('/');
       return;
     }
@@ -94,13 +93,12 @@ export const Profile = () => {
     try {
       await authAPI.logout();
     } catch (error) {
-      // Если ошибка при выходе из Supabase, очищаем локальные данные
       console.log('Logout error:', error);
     }
 
     setIsLogoutModalVisible(false);
     localStorage.removeItem('userToken');
-    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userLogin');
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
     setUser(null);
@@ -119,19 +117,12 @@ export const Profile = () => {
     }
 
     localStorage.removeItem('userToken');
-    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userLogin');
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
     setUser(null);
     navigate('/');
   };
-
-  useEffect(() => {
-    // Удаляем автоматический редирект на главную
-    // if (!user) {
-    //   navigate('/');
-    // }
-  }, [user, navigate]);
 
   const showAuthModal = () => {
     setIsAuthModalVisible(true);
@@ -148,21 +139,19 @@ export const Profile = () => {
   useEffect(() => {
     if (timeSpent >= 30 && !achievementUnlocked && user) {
       setAchievementUnlocked(true);
-      message.success('Achievement Unlocked: Stayed 30 seconds on profile page!');
+      message.success('Достижение разблокировано: 30 секунд в профиле!');
     }
   }, [timeSpent, achievementUnlocked, user]);
 
-  // Для совместимости с существующей логикой целей
   const goals = useMemo(() => {
-    // Временная заглушка для целей
     const baseGoals = [];
     const newGoals = [...baseGoals];
 
-    if (!newGoals.includes("Like 10 cards")) {
-      newGoals.push("Like 10 cards");
+    if (!newGoals.includes("Лайкнуть 10 карточек")) {
+      newGoals.push("Лайкнуть 10 карточек");
     }
-    if (!newGoals.includes("Stay 30 seconds on profile page")) {
-      newGoals.push("Stay 30 seconds on profile page");
+    if (!newGoals.includes("Пробыть 30 секунд в профиле")) {
+      newGoals.push("Пробыть 30 секунд в профиле");
     }
 
     return newGoals;
@@ -174,40 +163,36 @@ export const Profile = () => {
   const updatedGoals = useMemo(() => {
     let newGoals = [...goals];
     if (isGoalAchieved) {
-      newGoals = newGoals.filter((goal) => goal !== "Like 10 cards");
+      newGoals = newGoals.filter((goal) => goal !== "Лайкнуть 10 карточек");
     }
     if (isTimeGoalAchieved) {
-      newGoals = newGoals.filter((goal) => goal !== "Stay 30 seconds on profile page");
+      newGoals = newGoals.filter((goal) => goal !== "Пробыть 30 секунд в профиле");
     }
     return newGoals;
   }, [goals, isGoalAchieved, isTimeGoalAchieved]);
 
   const achievements = useMemo(() => {
-    // Временная заглушка для достижений
     const baseAchievements = [];
 
-    if (isGoalAchieved && !baseAchievements.includes("Like 10 cards")) {
-      baseAchievements.push("Like 10 cards");
+    if (isGoalAchieved) {
+      baseAchievements.push("Лайкнуть 10 карточек");
     }
-    if (isTimeGoalAchieved && !baseAchievements.includes("Stay 30 seconds on profile page")) {
-      baseAchievements.push("Stay 30 seconds on profile page");
+    if (isTimeGoalAchieved) {
+      baseAchievements.push("Пробыть 30 секунд в профиле");
     }
 
     return baseAchievements;
   }, [isGoalAchieved, isTimeGoalAchieved]);
 
-  // Обработчик успешной авторизации
   const handleAuthSuccess = () => {
     setIsAuthModalVisible(false);
-    checkAuth(); // Обновляем информацию о пользователе
+    checkAuth();
     if (pendingAction) {
-      // Выполняем отложенное действие
       pendingAction();
       setPendingAction(null);
     }
   };
 
-  // Обработчик отмены авторизации
   const handleAuthCancel = () => {
     setIsAuthModalVisible(false);
     setPendingAction(null);
@@ -239,7 +224,7 @@ export const Profile = () => {
             </Title>
 
             <div className="profile-section">
-              <Title level={4}>Дата создания аккаунта: {user ? new Date(user.created_at || user.aud).toLocaleDateString() : 'Неизвестно'}</Title>
+              <Title level={4}>Аккаунт создан: {user ? new Date(user.created_at || user.aud).toLocaleDateString() : 'Неизвестно'}</Title>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
@@ -262,7 +247,7 @@ export const Profile = () => {
                 style={{ display: 'flex', justifyContent: 'center' }}
                 renderItem={(goal) => (
                   <List.Item>
-                    {goal === "Like 10 cards" ? (
+                    {goal === "Лайкнуть 10 карточек" ? (
                       <Row align="middle">
                         <Col>
                           <img
@@ -275,7 +260,7 @@ export const Profile = () => {
                           <Text>{goal}</Text>
                         </Col>
                       </Row>
-                    ) : goal === "Stay 30 seconds on profile page" ? (
+                    ) : goal === "Пробыть 30 секунд в профиле" ? (
                       <Row align="middle">
                         <Col>
                           <img
@@ -306,7 +291,7 @@ export const Profile = () => {
                 dataSource={achievements}
                 renderItem={(achievement) => (
                   <List.Item>
-                    {achievement === "Like 10 cards" ? (
+                    {achievement === "Лайкнуть 10 карточек" ? (
                       <Row align="middle">
                         <Col>
                           <img src={dinosaur2} alt="dinosaur" className="achievement-dinosaur" />
@@ -315,7 +300,7 @@ export const Profile = () => {
                           <Text>{achievement}</Text>
                         </Col>
                       </Row>
-                    ) : achievement === "Stay 30 seconds on profile page" ? (
+                    ) : achievement === "Пробыть 30 секунд в профиле" ? (
                       <Row align="middle">
                         <Col>
                           <img src={dinosaur3} alt="dinosaur" className="achievement-dinosaur" />
@@ -351,7 +336,6 @@ export const Profile = () => {
       </div>
       <BotomFooter />
 
-      {/* Модальное окно авторизации */}
       <AuthModal
         visible={isAuthModalVisible}
         onLogin={handleAuthSuccess}

@@ -3,21 +3,21 @@ import { supabase, isSupabaseConfigured } from './supabase';
 // === AUTH с Supabase ===
 export const authAPI = {
     // Регистрация через Supabase Auth
-    register: async (email, password) => {
+    register: async (login, password) => {
         if (!isSupabaseConfigured()) {
             throw new Error('Supabase не настроен');
         }
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({ email: login, password });
         if (error) throw error;
         return data;
     },
 
     // Вход через Supabase Auth
-    login: async (email, password) => {
+    login: async (login, password) => {
         if (!isSupabaseConfigured()) {
             throw new Error('Supabase не настроен');
         }
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email: login, password });
         if (error) throw error;
         return data;
     },
@@ -36,7 +36,7 @@ export const authAPI = {
         } catch (error) {
             if (error?.message?.includes('Failed to fetch')) {
                 localStorage.removeItem('userToken');
-                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userLogin');
                 localStorage.removeItem('userId');
             }
             throw error;

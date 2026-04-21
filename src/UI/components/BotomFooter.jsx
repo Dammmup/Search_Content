@@ -26,7 +26,6 @@ export const BotomFooter = () => {
           <h5 className="footer-title" >Find us</h5>
           <a href=''>
           <p className="footer-contact">+7(747)8313398</p></a>
-          <a href=''><p className="footer-contact">damir.-@mail.ru</p></a>
         </Col>
       </Row>
     </Footer>
