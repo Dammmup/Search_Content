@@ -5,60 +5,20 @@ import { fetchFilms, toggleFilmLike } from '../../BL/slices/filmSlice';
 import { HeartOutlined, HeartFilled } from '@ant-design/icons';
 import ModernNav from '../components/ModernNav';
 import { BotomFooter } from '../components/BotomFooter';
-import AuthModal from '../components/AuthModal';
-import { authAPI } from '../../BL/api';
 
 const { Search } = Input;
 
 export const SearchFilm = () => {
   const dispatch = useDispatch();
   const { films, status, error } = useSelector((state) => state.films);
-  const [isAuthModalVisible, setIsAuthModalVisible] = useState(false);
-  const [pendingSearchValue, setPendingSearchValue] = useState(null);
+  const [lastQuery, setLastQuery] = useState('');
 
-  // Функция проверки авторизации
-  const checkAuth = async () => {
-    try {
-      const userToken = localStorage.getItem('userToken');
-      if (userToken) {
-        const user = await authAPI.getUser();
-        if (user) {
-          return true;
-        }
-      }
-      return false;
-    } catch (error) {
-      return false;
+  const onSearch = (value) => {
+    const query = value.trim();
+    setLastQuery(query);
+    if (query) {
+      dispatch(fetchFilms(query));
     }
-  };
-
-  // Обработчик поиска
-  const onSearch = async (value) => {
-    const isAuthenticated = await checkAuth();
-    if (!isAuthenticated) {
-      // Сохраняем значение для поиска и показываем модальное окно
-      setPendingSearchValue(value);
-      setIsAuthModalVisible(true);
-      return;
-    }
-    // Если пользователь авторизован, выполняем поиск
-    dispatch(fetchFilms(value));
-  };
-
-  // Обработчик успешной авторизации
-  const handleAuthSuccess = () => {
-    setIsAuthModalVisible(false);
-    if (pendingSearchValue) {
-      // Выполняем отложенный поиск
-      dispatch(fetchFilms(pendingSearchValue));
-      setPendingSearchValue(null);
-    }
-  };
-
-  // Обработчик отмены авторизации
-  const handleAuthCancel = () => {
-    setIsAuthModalVisible(false);
-    setPendingSearchValue(null);
   };
 
   const handleLike = (film) => {
@@ -78,7 +38,7 @@ export const SearchFilm = () => {
           Найди свой любимый фильм или сериал
         </p>
         <Search
-          placeholder="Введи название фильма..."
+          placeholder="Введи название сериала или шоу..."
           allowClear
           enterButton="Поиск"
           size="large"
@@ -111,7 +71,7 @@ export const SearchFilm = () => {
                       <>
                         {result.year && <p><strong>Год:</strong> {result.year}</p>}
                         {result.description && <p><strong>Описание:</strong> {result.description}</p>}
-                        {result.rating && result.rating.kp && <p><strong>Рейтинг КиноПоиск:</strong> {result.rating.kp}</p>}
+                        {result.rating && result.rating.kp && <p><strong>Рейтинг TVMaze:</strong> {result.rating.kp}</p>}
                         {result.rating && result.rating.imdb && <p><strong>Рейтинг IMDb:</strong> {result.rating.imdb}</p>}
                       </>
                     }
@@ -132,17 +92,10 @@ export const SearchFilm = () => {
             ))}
           </Row>
         ) : (
-          <p style={{ textAlign: 'center' }}></p>
+          <p style={{ textAlign: 'center' }}>{lastQuery ? 'Ничего не найдено' : ''}</p>
         )}
       </div>
       <BotomFooter />
-
-      {/* Модальное окно авторизации */}
-      <AuthModal
-        visible={isAuthModalVisible}
-        onLogin={handleAuthSuccess}
-        onCancel={handleAuthCancel}
-      />
     </div>
   );
 };

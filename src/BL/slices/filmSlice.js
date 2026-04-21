@@ -2,17 +2,91 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { favoritesAPI, authAPI } from '../api';
 
-// Внешний API для фильмов
+const stripHtml = (value = '') => value.replace(/<[^>]*>/g, '').trim();
+const OMDB_API_KEY = import.meta.env.VITE_OMDB_API_KEY || 'thewdb';
+
+const mapOmdbTitle = (title) => ({
+  id: `omdb-${title.imdbID}`,
+  name: title.Title,
+  year: title.Year,
+  description: title.Type === 'series' ? 'Сериал' : title.Type === 'movie' ? 'Фильм' : title.Type,
+  poster: {
+    url: title.Poster && title.Poster !== 'N/A' ? title.Poster : null,
+  },
+  rating: {
+    kp: null,
+    imdb: null,
+  },
+  type: title.Type,
+  imdbId: title.imdbID,
+  is_favorite: false,
+});
+
+const mapTvMazeShow = ({ show }) => ({
+  id: `tvmaze-${show.id}`,
+  name: show.name,
+  year: show.premiered ? new Date(show.premiered).getFullYear() : null,
+  description: stripHtml(show.summary) || `${show.type || 'Show'}${show.genres?.length ? `: ${show.genres.join(', ')}` : ''}`,
+  poster: {
+    url: show.image?.original || show.image?.medium || null,
+  },
+  rating: {
+    kp: show.rating?.average || null,
+    imdb: null,
+  },
+  type: show.type,
+  genres: show.genres || [],
+  url: show.url,
+  is_favorite: false,
+});
+
+const dedupeTitles = (items) => {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = `${String(item.name).toLowerCase()}-${item.year || ''}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+};
+
+// Public OMDb + TVMaze search APIs.
 export const fetchFilms = createAsyncThunk(
   'films/fetchFilms',
   async (query, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`https://api.kinopoisk.dev/v1.4/movie/search?query=${query}`, {
-        headers: { 'X-API-KEY': '0Y26KB7-3SB4NK8-N277RVY-NQW1TEN' }
-      });
-      return response.data.docs;
+      const searchQuery = query?.trim();
+      if (!searchQuery) {
+        return [];
+      }
+
+      const [omdbResponse, tvMazeResponse] = await Promise.allSettled([
+        axios.get('https://www.omdbapi.com/', {
+          params: { s: searchQuery, apikey: OMDB_API_KEY },
+        }),
+        axios.get('https://api.tvmaze.com/search/shows', {
+          params: { q: searchQuery },
+        }),
+      ]);
+
+      const omdbItems = omdbResponse.status === 'fulfilled' && omdbResponse.value.data.Response === 'True'
+        ? omdbResponse.value.data.Search.map(mapOmdbTitle)
+        : [];
+
+      const tvMazeItems = tvMazeResponse.status === 'fulfilled'
+        ? tvMazeResponse.value.data.map(mapTvMazeShow)
+        : [];
+
+      const results = dedupeTitles([...omdbItems, ...tvMazeItems]);
+      if (!results.length) {
+        throw new Error('Ничего не найдено');
+      }
+
+      return results;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Error fetching data');
+      return rejectWithValue(error.message || 'Error fetching movies and shows');
     }
   }
 );

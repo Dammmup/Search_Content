@@ -1,53 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, Row, Col, Button, Alert, Spin, Tag, Select, Empty } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchJokes, fetchRandomJokes, toggleJokeLike } from '../../BL/slices/jokeSlice';
 import { HeartOutlined, HeartFilled, SmileOutlined } from '@ant-design/icons';
 import ModernNav from '../components/ModernNav';
 import { BotomFooter } from '../components/BotomFooter';
-import AuthModal from '../components/AuthModal';
-import { authAPI } from '../../BL/api';
 
 const { Option } = Select;
 
 export const SearchJokes = () => {
     const dispatch = useDispatch();
     const { jokes, status, error } = useSelector((state) => state.jokes);
-    const [isAuthModalVisible, setIsAuthModalVisible] = useState(false);
-    const [pendingAction, setPendingAction] = useState(null);
 
-    // Функция проверки авторизации
-    const checkAuth = async () => {
-        try {
-            const userToken = localStorage.getItem('userToken');
-            if (userToken) {
-                const user = await authAPI.getUser();
-                if (user) {
-                    return true;
-                }
-            }
-            return false;
-        } catch (error) {
-            return false;
-        }
-    };
-
-    // Обработчик выбора категории
-    const handleCategoryChange = async (value) => {
-        const isAuthenticated = await checkAuth();
-        if (!isAuthenticated) {
-            // Сохраняем действие и показываем модальное окно
-            setPendingAction(() => () => {
-                if (value === 'random') {
-                    dispatch(fetchRandomJokes());
-                } else {
-                    dispatch(fetchJokes(value));
-                }
-            });
-            setIsAuthModalVisible(true);
-            return;
-        }
-        // Если пользователь авторизован, выполняем действие
+    const handleCategoryChange = (value) => {
         if (value === 'random') {
             dispatch(fetchRandomJokes());
         } else {
@@ -55,35 +20,8 @@ export const SearchJokes = () => {
         }
     };
 
-    // Обработчик кнопки "Ещё шутки"
-    const handleMoreJokesClick = async () => {
-        const isAuthenticated = await checkAuth();
-        if (!isAuthenticated) {
-            // Сохраняем действие и показываем модальное окно
-            setPendingAction(() => () => {
-                dispatch(fetchRandomJokes());
-            });
-            setIsAuthModalVisible(true);
-            return;
-        }
-        // Если пользователь авторизован, выполняем действие
+    const handleMoreJokesClick = () => {
         dispatch(fetchRandomJokes());
-    };
-
-    // Обработчик успешной авторизации
-    const handleAuthSuccess = () => {
-        setIsAuthModalVisible(false);
-        if (pendingAction) {
-            // Выполняем отложенное действие
-            pendingAction();
-            setPendingAction(null);
-        }
-    };
-
-    // Обработчик отмены авторизации
-    const handleAuthCancel = () => {
-        setIsAuthModalVisible(false);
-        setPendingAction(null);
     };
 
     const handleLike = (joke) => {
@@ -120,10 +58,8 @@ export const SearchJokes = () => {
                 >
                     <Option value="random">🎲 Случайные шутки</Option>
                     <Option value="programming">💻 Программистские</Option>
-                    <Option value="misc">🎭 Разные</Option>
-                    <Option value="pun">🤪 Каламбуры</Option>
-                    <Option value="spooky">👻 Страшные</Option>
-                    <Option value="christmas">🎄 Новогодние</Option>
+                    <Option value="general">🎭 Разные</Option>
+                    <Option value="knockKnock">🚪 Knock-knock</Option>
                 </Select>
 
                 <Button
@@ -197,14 +133,6 @@ export const SearchJokes = () => {
             </div>
 
             <BotomFooter />
-
-            {/* Модальное окно авторизации */}
-            <AuthModal
-                visible={isAuthModalVisible}
-                onLogin={handleAuthSuccess}
-                onCancel={handleAuthCancel}
-            />
-
             <style>{`
         .joke-card {
           min-height: 200px;

@@ -19,7 +19,7 @@ async function createUser() {
 
     console.log(`🚀 Попытка регистрации пользователя: ${email}...`);
 
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
         email,
         password,
     });

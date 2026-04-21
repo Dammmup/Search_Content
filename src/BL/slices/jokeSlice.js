@@ -2,60 +2,42 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { favoritesAPI, authAPI } from '../api';
 
+const JOKE_CATEGORY_ENDPOINTS = {
+    random: 'https://official-joke-api.appspot.com/random_ten',
+    general: 'https://official-joke-api.appspot.com/jokes/general/ten',
+    programming: 'https://official-joke-api.appspot.com/jokes/programming/ten',
+    knockKnock: 'https://official-joke-api.appspot.com/jokes/knock-knock/ten',
+};
+
+const mapOfficialJoke = (joke) => ({
+    id: joke.id,
+    setup: joke.setup,
+    delivery: joke.punchline,
+    category: joke.type,
+    is_favorite: false,
+});
+
 export const fetchJokes = createAsyncThunk(
     'jokes/fetchJokes',
-    async (category = 'any') => {
-        const response = await axios.get(
-            `https://v2.jokeapi.dev/joke/${category}?amount=20&lang=ru`
-        );
-        if (response.data.type === 'twopart') {
-            return [{
-                id: response.data.id,
-                setup: response.data.setup,
-                delivery: response.data.delivery,
-                category: response.data.category,
-                is_favorite: false,
-            }];
+    async (category = 'random', { rejectWithValue }) => {
+        try {
+            const response = await axios.get(JOKE_CATEGORY_ENDPOINTS[category] || JOKE_CATEGORY_ENDPOINTS.random);
+            return response.data.map(mapOfficialJoke);
+        } catch (error) {
+            return rejectWithValue(error.message || 'Error fetching jokes');
         }
-        return [{
-            id: response.data.id,
-            joke: response.data.joke,
-            category: response.data.category,
-            is_favorite: false,
-        }];
     }
 );
 
 export const fetchRandomJokes = createAsyncThunk(
     'jokes/fetchRandomJokes',
-    async () => {
-        const categories = ['programming', 'misc', 'pun', 'spooky', 'christmas'];
-        const jokes = [];
-
-        for (const cat of categories) {
-            try {
-                const response = await axios.get(`https://v2.jokeapi.dev/joke/${cat}?lang=ru`);
-                if (response.data.type === 'twopart') {
-                    jokes.push({
-                        id: `${response.data.id}-${cat}`,
-                        setup: response.data.setup,
-                        delivery: response.data.delivery,
-                        category: response.data.category,
-                        is_favorite: false,
-                    });
-                } else {
-                    jokes.push({
-                        id: `${response.data.id}-${cat}`,
-                        joke: response.data.joke,
-                        category: response.data.category,
-                        is_favorite: false,
-                    });
-                }
-            } catch (e) {
-                console.log(`Failed to fetch from ${cat}`);
-            }
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await axios.get(JOKE_CATEGORY_ENDPOINTS.random);
+            return response.data.map(mapOfficialJoke);
+        } catch (error) {
+            return rejectWithValue(error.message || 'Error fetching jokes');
         }
-        return jokes;
     }
 );
 
@@ -128,7 +110,7 @@ const jokeSlice = createSlice({
             })
             .addCase(fetchJokes.rejected, (state, action) => {
                 state.status = 'failed';
-                state.error = action.error.message;
+                state.error = action.payload || action.error.message;
             })
             .addCase(fetchRandomJokes.pending, (state) => {
                 state.status = 'loading';
@@ -139,7 +121,7 @@ const jokeSlice = createSlice({
             })
             .addCase(fetchRandomJokes.rejected, (state, action) => {
                 state.status = 'failed';
-                state.error = action.error.message;
+                state.error = action.payload || action.error.message;
             })
             .addCase(toggleJokeLike.fulfilled, (state, action) => {
                 const jokeId = action.payload;

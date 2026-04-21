@@ -23,19 +23,21 @@ const AuthModal = ({ visible, onLogin, onCancel }) => {
     setLoading(true);
     setError(null);
 
-    const { email, phone, password, login } = values;
+    const { email, phone, password } = values;
 
     try {
       let result;
       if (isLogin) {
         if (authMethod === 'email') {
+          if (!email) throw new Error('Пожалуйста, введите Email или Логин');
           // Поддержка "user" -> "user@admin.com"
-          let emailIdentifier = email || login;
-          if (emailIdentifier && !emailIdentifier.includes('@')) {
+          let emailIdentifier = email;
+          if (!emailIdentifier.includes('@')) {
             emailIdentifier = `${emailIdentifier}@admin.com`;
           }
           result = await authAPI.login(emailIdentifier, password);
         } else {
+          if (!phone) throw new Error('Пожалуйста, введите номер телефона');
           result = await authAPI.loginWithPhone(phone, password);
         }
 
@@ -47,12 +49,14 @@ const AuthModal = ({ visible, onLogin, onCancel }) => {
         }
       } else {
         if (authMethod === 'email') {
-          let emailIdentifier = email || login;
-          if (emailIdentifier && !emailIdentifier.includes('@')) {
+          if (!email) throw new Error('Пожалуйста, введите Email или Логин');
+          let emailIdentifier = email;
+          if (!emailIdentifier.includes('@')) {
             emailIdentifier = `${emailIdentifier}@admin.com`;
           }
           result = await authAPI.register(emailIdentifier, password);
         } else {
+          if (!phone) throw new Error('Пожалуйста, введите номер телефона');
           result = await authAPI.registerWithPhone(phone, password);
         }
 
