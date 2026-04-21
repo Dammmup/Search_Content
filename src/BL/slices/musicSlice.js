@@ -59,7 +59,7 @@ export const loadMusicFavoritesFromDB = createAsyncThunk(
 
 export const toggleTrackLike = createAsyncThunk(
   'music/toggleTrackLike',
-  async ({ track }, { getState }) => {
+  async ({ track }, { getState, rejectWithValue }) => {
     const { music } = getState();
     const currentTrack = music.tracks.find(t => t.id === track.id);
     const isFavorite = currentTrack?.is_favorite;

@@ -44,7 +44,7 @@ export const loadCryptoFavoritesFromDB = createAsyncThunk(
 
 export const toggleCryptoLike = createAsyncThunk(
     'crypto/toggleCryptoLike',
-    async ({ coin }, { getState }) => {
+    async ({ coin }, { getState, rejectWithValue }) => {
         try {
             const user = await authAPI.getUser();
             if (!user) throw new Error('Не авторизован');

@@ -2,7 +2,6 @@ import { Button, ConfigProvider, Space, Tooltip } from 'antd';
 import { HeartOutlined, UserOutlined, GlobalOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import './styles/searchbar.css';
-import logo from './logo.png';
 import { useSelector } from 'react-redux';
 
 const ModernNav = () => {
@@ -42,7 +41,7 @@ const ModernNav = () => {
         <div className='modern-nav'>
             <div className="nav-logo">
                 <Link to="/">
-                    <img src={logo} alt="SearchX" className="logo-img" />
+                    <img src="/search_content_logo_019db154-6c6e-7062-b5b5-42f475cd440c.svg" alt="SearchX" className="logo-img" />
                 </Link>
             </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Input, Alert } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
+import { LockOutlined, MailOutlined } from '@ant-design/icons';
 import { authAPI } from '../../BL/api';
 
 const AuthModal = ({ visible, onLogin, onCancel }) => {
@@ -16,12 +16,6 @@ const AuthModal = ({ visible, onLogin, onCancel }) => {
       setIsLogin(true);
     }
   }, [visible, form]);
-
-  const onOpen = () => {
-    setIsLogin(true);
-    setError(null);
-    form.resetFields();
-  };
 
   const handleSubmit = async (values) => {
     setLoading(true);

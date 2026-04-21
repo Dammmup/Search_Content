@@ -30,7 +30,7 @@ export const loadGameFavoritesFromDB = createAsyncThunk(
 
 export const toggleGameLike = createAsyncThunk(
     'games/toggleGameLike',
-    async ({ game }, { getState }) => {
+    async ({ game }, { getState, rejectWithValue }) => {
         try {
             const user = await authAPI.getUser();
             if (!user) throw new Error('Не авторизован');

@@ -75,7 +75,7 @@ export const loadJokeFavoritesFromDB = createAsyncThunk(
 
 export const toggleJokeLike = createAsyncThunk(
     'jokes/toggleJokeLike',
-    async ({ joke }, { getState }) => {
+    async ({ joke }, { getState, rejectWithValue }) => {
         try {
             const user = await authAPI.getUser();
             if (!user) throw new Error('Не авторизован');

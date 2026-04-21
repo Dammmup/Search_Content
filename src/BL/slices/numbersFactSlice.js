@@ -77,7 +77,7 @@ export const loadNumbersFactFavoritesFromDB = createAsyncThunk(
 
 export const toggleNumbersFactLike = createAsyncThunk(
   'numbersFact/toggleNumbersFactLike',
-  async ({ fact }, { getState }) => {
+  async ({ fact }, { getState, rejectWithValue }) => {
     try {
       const user = await authAPI.getUser();
       if (!user) throw new Error('Не авторизован');

@@ -1,9 +1,9 @@
 /* eslint-disable react/jsx-key */
 import React, { useState, useEffect } from 'react';
 import { Space, ConfigProvider, Button, Row, Col, Card, Image, Popover, message, Tag } from 'antd';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { VideoCameraOutlined, CustomerServiceOutlined, FileImageOutlined, TrophyFilled, HeartFilled, HeartOutlined, SmileOutlined, DollarOutlined, PlayCircleOutlined, ExperimentOutlined } from '@ant-design/icons';
-import { useSelector, useDispatch } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import AudioPlayer from 'react-h5-audio-player';
 import 'react-h5-audio-player/lib/styles.css';
 import './styles/Favorites.css';
@@ -43,8 +43,6 @@ export const Favorites = () => {
     }
   };
 
-  const navigate = useNavigate();
-
   // Загрузка из базы данных
   const [dbFavorites, setDbFavorites] = useState({
     film: [],
@@ -58,19 +56,6 @@ export const Favorites = () => {
   });
 
   useEffect(() => {
-    const load = (key) => {
-      const saved = localStorage.getItem(key);
-      return saved ? JSON.parse(saved) : [];
-    };
-    setLocalFavFilms(load('favorite_films'));
-    setLocalFavImages(load('favorite_images'));
-    setLocalFavTracks(load('favorite_tracks'));
-    setLocalFavCharacters(load('favorite_rickandmorty'));
-    setLocalFavFacts(load('favorite_numbersfacts'));
-    setLocalFavJokes(load('favorite_jokes'));
-    setLocalFavCoins(load('favorite_crypto'));
-    setLocalFavGames(load('favorite_games'));
-
     // Подгрузка из БД
     const loadDbFavorites = async () => {
       try {

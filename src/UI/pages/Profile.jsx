@@ -1,9 +1,7 @@
-/* eslint-disable react/no-unescaped-entities */
 import { useState, useMemo, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Typography, List, Button, Modal, Row, Col, Statistic, message, Card } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { logout } from '../../BL/userdb';
 import { authAPI } from '../../BL/api';
 import ModernNav from '../components/ModernNav';
 import './styles/Profile.css';

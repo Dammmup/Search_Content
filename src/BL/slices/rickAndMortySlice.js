@@ -38,7 +38,7 @@ export const loadRickAndMortyFavoritesFromDB = createAsyncThunk(
 
 export const toggleRickAndMortyLike = createAsyncThunk(
   'rickAndMorty/toggleRickAndMortyLike',
-  async ({ character }, { getState }) => {
+  async ({ character }, { getState, rejectWithValue }) => {
     try {
       const user = await authAPI.getUser();
       if (!user) throw new Error('Не авторизован');

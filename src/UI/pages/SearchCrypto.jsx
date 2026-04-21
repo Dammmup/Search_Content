@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Input, Card, Row, Col, Button, Alert, Spin, Image, Tag, Table } from 'antd';
+import { Input, Button, Alert, Spin, Image, Tag, Table } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCrypto, searchCrypto, toggleCryptoLike } from '../../BL/slices/cryptoSlice';
 import { HeartOutlined, HeartFilled, ArrowUpOutlined, ArrowDownOutlined, SearchOutlined } from '@ant-design/icons';

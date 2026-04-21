@@ -1,11 +1,8 @@
-/* eslint-disable react/no-unescaped-entities */
 import { Link } from "react-router-dom";
-import { Button, Typography } from 'antd';
+import { Button } from 'antd';
 import ModernNav from "../components/ModernNav";
 import { BotomFooter } from "../components/BotomFooter";
 import { FrownOutlined } from '@ant-design/icons';
-
-const { Title, Text } = Typography;
 
 export const Empty = () => {
   return (

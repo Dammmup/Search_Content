@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Typography, Spin, Empty, Avatar, Tag, Tooltip, Image, message } from 'antd';
+import { Card, Row, Col, Typography, Spin, Empty, Avatar, Tag, Tooltip, Image, message, Space } from 'antd';
 import { UserOutlined, ClockCircleOutlined, HeartFilled } from '@ant-design/icons';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';

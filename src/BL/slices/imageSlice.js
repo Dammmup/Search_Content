@@ -37,7 +37,7 @@ export const loadImageFavoritesFromDB = createAsyncThunk(
 
 export const toggleImageLike = createAsyncThunk(
   'images/toggleImageLike',
-  async ({ image }, { getState }) => {
+  async ({ image }, { getState, rejectWithValue }) => {
     try {
       const user = await authAPI.getUser();
       if (!user) throw new Error('Не авторизован');

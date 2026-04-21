@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Card, Row, Col, Button, Alert, Spin, Tag, Select, Empty } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchJokes, fetchRandomJokes, toggleJokeLike } from '../../BL/slices/jokeSlice';
-import { HeartOutlined, HeartFilled, SmileOutlined, FrownOutlined } from '@ant-design/icons';
+import { HeartOutlined, HeartFilled, SmileOutlined } from '@ant-design/icons';
 import ModernNav from '../components/ModernNav';
 import { BotomFooter } from '../components/BotomFooter';
 import AuthModal from '../components/AuthModal';

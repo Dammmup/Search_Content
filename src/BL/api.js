@@ -30,8 +30,17 @@ export const authAPI = {
 
     // Получить текущего пользователя
     getUser: async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        return user;
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            return user;
+        } catch (error) {
+            if (error?.message?.includes('Failed to fetch')) {
+                localStorage.removeItem('userToken');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userId');
+            }
+            throw error;
+        }
     },
 
     // Подписаться на изменения auth
@@ -152,7 +161,7 @@ export const favoritesAPI = {
             return { isFavorite: false };
         }
 
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from('favorites')
             .select('id')
             .eq('user_id', userId)
